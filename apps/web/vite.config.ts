@@ -1,0 +1,17 @@
+import { defineConfig } from 'vite'
+import react, { reactCompilerPreset } from '@vitejs/plugin-react'
+import babel from '@rolldown/plugin-babel'
+import { tanstackRouter } from '@tanstack/router-plugin/vite'
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [
+    // Must come before @vitejs/plugin-react, per TanStack Router's docs
+    tanstackRouter({
+      target: 'react',
+      autoCodeSplitting: true,
+    }),
+    react(),
+    babel({ presets: [reactCompilerPreset()] })
+  ],
+})
