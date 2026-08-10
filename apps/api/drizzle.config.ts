@@ -6,6 +6,7 @@ export default defineConfig({
   schema: './src/db/schema.ts',
   dialect: 'postgresql',
   dbCredentials: {
-    url: process.env.DATABASE_URL!,
+    // PULSE_PG_DATABASE_URL, not DATABASE_URL — see src/db/index.ts for why.
+    url: process.env.PULSE_PG_DATABASE_URL!,
   },
 })

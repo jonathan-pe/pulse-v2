@@ -7,11 +7,11 @@ import * as schema from './schema.js'
 // Marketplace-provisioned Neon (stateless per-query requests, no connection
 // lifecycle to manage). See ADR: Hosting & DevOps.
 //
-// Lazy singleton: avoids evaluating DATABASE_URL at module-import time. Do
-// NOT wrap this in a Proxy — better-auth's Drizzle adapter inspects the db
-// object directly, and a Proxy silently breaks that.
+// Lazy singleton: avoids evaluating the connection string at module-import
+// time. Do NOT wrap this in a Proxy — better-auth's Drizzle adapter inspects
+// the db object directly, and a Proxy silently breaks that.
 function createDb() {
-  const sql = neon(process.env.DATABASE_URL!)
+  const sql = neon(process.env.PULSE_PG_DATABASE_URL!)
   return drizzle(sql, { schema })
 }
 
