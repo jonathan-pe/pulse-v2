@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
+import { Logo } from '@/components/logo'
 import { useAuth } from '@/hooks/useAuth'
 
 export function Header() {
@@ -7,7 +8,8 @@ export function Header() {
 
   return (
     <header className="flex items-center justify-between border-b border-border px-4 py-3">
-      <Link to="/" className="font-heading text-lg font-medium">
+      <Link to="/" className="flex items-center gap-2 font-heading text-lg font-medium">
+        <Logo className="size-7" />
         Pulse
       </Link>
       {isPending ? null : user ? (
