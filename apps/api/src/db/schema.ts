@@ -1,5 +1,14 @@
 import { relations } from "drizzle-orm";
-import { pgTable, text, timestamp, boolean, index } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  timestamp,
+  boolean,
+  index,
+  uniqueIndex,
+  numeric,
+  integer,
+} from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -89,5 +98,117 @@ export const accountRelations = relations(account, ({ one }) => ({
   user: one(user, {
     fields: [account.userId],
     references: [user.id],
+  }),
+}));
+
+// Market data (Polymarket ingestion) — hand-authored, not generated.
+// See: implementation spec, "Polymarket Sports Ingestion".
+
+export const league = pgTable("league", {
+  id: text("id").primaryKey(), // "nba" | "wnba" | "mlb" | "nfl" | "nhl" — fixed seed, not ingested
+  name: text("name").notNull(),
+  polymarketTagSlug: text("polymarket_tag_slug").notNull().unique(),
+});
+
+export const team = pgTable(
+  "team",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    leagueId: text("league_id")
+      .notNull()
+      .references(() => league.id),
+    name: text("name").notNull(),
+  },
+  (table) => [uniqueIndex("team_league_name_idx").on(table.leagueId, table.name)],
+);
+
+export const event = pgTable(
+  "event",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    externalId: text("external_id").notNull().unique(), // Polymarket event.id
+    leagueId: text("league_id")
+      .notNull()
+      .references(() => league.id),
+    teamAId: text("team_a_id")
+      .notNull()
+      .references(() => team.id),
+    teamBId: text("team_b_id")
+      .notNull()
+      .references(() => team.id),
+    title: text("title").notNull(),
+    startTime: timestamp("start_time").notNull(),
+    status: text("status", { enum: ["scheduled", "closed", "resolved"] })
+      .notNull()
+      .default("scheduled"),
+    lastSyncedAt: timestamp("last_synced_at").notNull().defaultNow(),
+  },
+  (table) => [index("event_league_status_idx").on(table.leagueId, table.status)],
+);
+
+export const market = pgTable(
+  "market",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    externalId: text("external_id").notNull().unique(), // Polymarket market.id
+    conditionId: text("condition_id").notNull().unique(), // on-chain id, for future CLOB lookups
+    eventId: text("event_id")
+      .notNull()
+      .references(() => event.id),
+    marketType: text("market_type", { enum: ["moneyline", "spreads", "totals"] }).notNull(),
+    line: numeric("line"), // null for moneyline
+    outcomeAName: text("outcome_a_name").notNull(),
+    outcomeAPrice: numeric("outcome_a_price").notNull(), // 0-1 probability
+    outcomeBName: text("outcome_b_name").notNull(),
+    outcomeBPrice: numeric("outcome_b_price").notNull(),
+    status: text("status", { enum: ["scheduled", "closed", "resolved"] })
+      .notNull()
+      .default("scheduled"),
+    resolvedOutcomeIndex: integer("resolved_outcome_index"), // 0 | 1, null until resolved
+    lastSyncedAt: timestamp("last_synced_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("market_event_idx").on(table.eventId),
+    index("market_status_idx").on(table.status),
+  ],
+);
+
+export const teamRelations = relations(team, ({ one, many }) => ({
+  league: one(league, {
+    fields: [team.leagueId],
+    references: [league.id],
+  }),
+  homeEvents: many(event, { relationName: "teamA" }),
+  awayEvents: many(event, { relationName: "teamB" }),
+}));
+
+export const eventRelations = relations(event, ({ one, many }) => ({
+  league: one(league, {
+    fields: [event.leagueId],
+    references: [league.id],
+  }),
+  teamA: one(team, {
+    fields: [event.teamAId],
+    references: [team.id],
+    relationName: "teamA",
+  }),
+  teamB: one(team, {
+    fields: [event.teamBId],
+    references: [team.id],
+    relationName: "teamB",
+  }),
+  markets: many(market),
+}));
+
+export const marketRelations = relations(market, ({ one }) => ({
+  event: one(event, {
+    fields: [market.eventId],
+    references: [event.id],
   }),
 }));

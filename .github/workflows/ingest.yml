@@ -1,0 +1,30 @@
+name: Polymarket ingestion
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+    inputs:
+      league:
+        description: "Single league to ingest (leave empty to run all 5)"
+        required: false
+        type: choice
+        options: ["", nba, wnba, mlb, nfl, nhl]
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    strategy:
+      # One job per league — runs in parallel and gives per-league pass/fail
+      # in the Actions tab, instead of one combined result. A league job
+      # failing doesn't cancel the others (fail-fast: false).
+      matrix:
+        league: [nba, wnba, mlb, nfl, nhl]
+      fail-fast: false
+    if: github.event_name != 'workflow_dispatch' || github.event.inputs.league == '' || github.event.inputs.league == matrix.league
+    steps:
+      - name: Ingest ${{ matrix.league }}
+        run: |
+          curl --fail -X POST "https://api.playpulse.co/api/ingest/${{ matrix.league }}" \
+            -H "Authorization: Bearer ${{ secrets.INGEST_SECRET }}" \
+            --max-time 180
