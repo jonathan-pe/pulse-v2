@@ -21,9 +21,11 @@ jobs:
       matrix:
         league: [nba, wnba, mlb, nfl, nhl]
       fail-fast: false
-    if: github.event_name != 'workflow_dispatch' || github.event.inputs.league == '' || github.event.inputs.league == matrix.league
     steps:
       - name: Ingest ${{ matrix.league }}
+        # matrix context isn't available in a job-level `if:` (only github/
+        # needs/vars/inputs are) — the per-league skip has to live here instead.
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.league == '' || github.event.inputs.league == matrix.league
         run: |
           curl --fail -X POST "https://api.playpulse.co/api/ingest/${{ matrix.league }}" \
             -H "Authorization: Bearer ${{ secrets.INGEST_SECRET }}" \
