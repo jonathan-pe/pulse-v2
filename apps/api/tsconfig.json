@@ -3,7 +3,13 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
-    "sourceMap": true
+    "sourceMap": true,
+    // Explicit rather than relying on TypeScript's default auto-inclusion of
+    // everything in node_modules/@types — Vercel's build environment
+    // resolves that differently than local, and without this the global
+    // fetch/Response types from @types/node don't get picked up (build
+    // fails with "Property 'status' does not exist on type 'Response'").
+    "types": ["node"]
   },
   "include": ["src/**/*.ts"]
 }

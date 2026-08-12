@@ -3,19 +3,20 @@
   "version": "0.0.0",
   "private": true,
   "description": "Pulse API (Fastify)",
-  "main": "app.ts",
+  "type": "module",
+  "main": "plugin.ts",
   "directories": {
     "test": "test"
   },
   "scripts": {
     "test": "npm run build:ts && tsc -p test/tsconfig.json && c8 node --test -r ts-node/register \"test/**/*.ts\"",
-    "start": "npm run build:ts && fastify start -l info dist/app.js",
+    "start": "npm run build:ts && fastify start -l info dist/plugin.js",
     "build": "tsc",
     "build:ts": "tsc",
     "watch:ts": "tsc -w",
     "check-types": "tsc --noEmit",
     "dev": "npm run build:ts && concurrently -k -p \"[{name}]\" -n \"TypeScript,App\" -c \"yellow.bold,cyan.bold\" \"npm:watch:ts\" \"npm:dev:start\"",
-    "dev:start": "fastify start --ignore-watch=.ts$ -w -l info -P dist/app.js",
+    "dev:start": "fastify start --ignore-watch=.ts$ -w -l info -P dist/plugin.js",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio"
@@ -23,7 +24,6 @@
   "license": "UNLICENSED",
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.6.26",
-    "@fastify/autoload": "^6.0.0",
     "@fastify/sensible": "^6.0.0",
     "@neondatabase/serverless": "^1.1.0",
     "@vercel/functions": "^3.9.1",
@@ -41,6 +41,7 @@
     "drizzle-kit": "^0.31.10",
     "fastify-tsconfig": "^3.0.0",
     "ts-node": "^10.4.0",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "undici-types": "^7.24.6"
   }
 }

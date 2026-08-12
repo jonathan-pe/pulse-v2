@@ -3,7 +3,21 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**"]
+      "outputs": ["dist/**"],
+      // Turbo only forwards env vars it's told about — anything not listed
+      // here is silently stripped from the build/runtime on Vercel, even if
+      // it's set in the Vercel project's own env var store. This caused a
+      // string of production crashes (missing BETTER_AUTH_SECRET etc.) that
+      // looked like unrelated bugs until the build log's own warning named
+      // the actual cause.
+      "env": [
+        "BETTER_AUTH_SECRET",
+        "BETTER_AUTH_URL",
+        "INGEST_SECRET",
+        "GOOGLE_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET",
+        "PULSE_PG_*"
+      ]
     },
     "check-types": {
       "dependsOn": ["^check-types", "build"]
