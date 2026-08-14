@@ -1,22 +1,14 @@
+import { Link } from "@tanstack/react-router"
 import { cn } from "@/lib/utils"
+import { LEAGUES } from "@/lib/sports"
 import type { EventWithMarkets } from "@/lib/api"
-
-export const LEAGUES = [
-  { id: "nba", label: "NBA" },
-  { id: "nfl", label: "NFL" },
-  { id: "nhl", label: "NHL" },
-  { id: "mlb", label: "MLB" },
-  { id: "wnba", label: "WNBA" },
-] as const
 
 export function LeagueRail({
   events,
-  selected,
-  onSelect,
+  selectedLeague,
 }: {
   events: EventWithMarkets[]
-  selected: string
-  onSelect: (leagueId: string) => void
+  selectedLeague?: string
 }) {
   const counts = new Map<string, number>()
   for (const e of events) {
@@ -30,12 +22,12 @@ export function LeagueRail({
       <div className="flex flex-col gap-0.5">
         {activeLeagues.map((l) => {
           const count = counts.get(l.id) ?? 0
-          const isSelected = l.id === selected
+          const isSelected = l.id === selectedLeague
           return (
-            <button
+            <Link
               key={l.id}
-              type="button"
-              onClick={() => onSelect(l.id)}
+              to="/sports/$sport/$league"
+              params={{ sport: l.sport, league: l.id }}
               className={cn(
                 "flex items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-sm font-semibold transition-colors",
                 isSelected
@@ -45,7 +37,7 @@ export function LeagueRail({
             >
               <span>{l.label}</span>
               <span className="font-mono text-xs tabular-nums text-muted-foreground">{count}</span>
-            </button>
+            </Link>
           )
         })}
       </div>
