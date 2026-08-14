@@ -15,6 +15,22 @@ export interface EventWithMarkets {
   markets: MarketWithPick[]
 }
 
+export type PickOutcomeStatus = 'upcoming' | 'pending' | 'won' | 'lost'
+
+export interface PickResult {
+  pick: { id: string; outcomeIndex: number; priceAtPick: string; createdAt: string }
+  market: {
+    id: string
+    marketType: 'moneyline' | 'spreads' | 'totals'
+    line: string | null
+    outcomeAName: string
+    outcomeBName: string
+  }
+  event: { id: string; title: string; startTime: string; leagueId: string }
+  status: PickOutcomeStatus
+  points: number | null
+}
+
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`/api${path}`, {
     ...init,

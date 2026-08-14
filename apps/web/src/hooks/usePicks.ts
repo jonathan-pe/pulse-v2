@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { apiFetch, type EventWithMarkets } from '@/lib/api'
+import { apiFetch, type EventWithMarkets, type PickResult } from '@/lib/api'
 
 // Exported so usePicksStaging can invalidate the same cache entry after a
 // confirm — picking and confirming are two different code paths now.
@@ -10,5 +10,12 @@ export function useMarkets(options: { enabled?: boolean } = {}) {
     queryKey: marketsQueryKey,
     queryFn: () => apiFetch<{ events: EventWithMarkets[] }>('/markets'),
     enabled: options.enabled,
+  })
+}
+
+export function useMyPicks() {
+  return useQuery({
+    queryKey: ['my-picks'],
+    queryFn: () => apiFetch<{ picks: PickResult[] }>('/picks'),
   })
 }

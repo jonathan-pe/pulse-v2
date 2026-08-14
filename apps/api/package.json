@@ -24,6 +24,7 @@
   "license": "UNLICENSED",
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.6.26",
+    "@pulse/shared": "workspace:*",
     "@fastify/sensible": "^6.0.0",
     "@neondatabase/serverless": "^1.1.0",
     "@vercel/functions": "^3.9.1",

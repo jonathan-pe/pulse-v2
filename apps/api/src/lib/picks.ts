@@ -1,4 +1,5 @@
-import { and, eq, ne } from 'drizzle-orm'
+import { and, desc, eq, ne } from 'drizzle-orm'
+import { scorePick, type PickOutcomeStatus } from '@pulse/shared'
 import { getDb } from '../db/index.js'
 import { event, market, pick } from '../db/schema.js'
 
@@ -121,4 +122,46 @@ export async function deletePick(userId: string, marketId: string): Promise<Pick
   const db = getDb()
   await db.delete(pick).where(and(eq(pick.userId, userId), eq(pick.marketId, marketId)))
   return { ok: true }
+}
+
+export interface PickResult {
+  pick: { id: string; outcomeIndex: number; priceAtPick: string; createdAt: Date }
+  market: {
+    id: string
+    marketType: 'moneyline' | 'spreads' | 'totals'
+    line: string | null
+    outcomeAName: string
+    outcomeBName: string
+  }
+  event: { id: string; title: string; startTime: Date; leagueId: string }
+  status: PickOutcomeStatus
+  points: number | null
+}
+
+// Unlike listOpenMarketsWithPicks, this is the "review what happened" view —
+// it includes every pick regardless of lock/resolution state, scored on read
+// from data ingestion already writes (market.resolvedOutcomeIndex), rather
+// than a separately persisted result.
+export async function listMyPicks(userId: string): Promise<PickResult[]> {
+  const db = getDb()
+  const rows = await db
+    .select({ pick, market, event })
+    .from(pick)
+    .innerJoin(market, eq(pick.marketId, market.id))
+    .innerJoin(event, eq(market.eventId, event.id))
+    .where(eq(pick.userId, userId))
+    .orderBy(desc(event.startTime))
+
+  return rows.map((row) => ({
+    pick: row.pick,
+    market: row.market,
+    event: row.event,
+    ...scorePick({
+      outcomeIndex: row.pick.outcomeIndex,
+      priceAtPick: Number(row.pick.priceAtPick),
+      marketStatus: row.market.status,
+      resolvedOutcomeIndex: row.market.resolvedOutcomeIndex,
+      eventStartTime: row.event.startTime,
+    }),
+  }))
 }

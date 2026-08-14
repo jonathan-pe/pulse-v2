@@ -8,10 +8,17 @@ export function Header() {
 
   return (
     <header className="flex items-center justify-between border-b border-border px-4 py-3">
-      <Link to="/" className="flex items-center gap-2 font-heading text-lg font-medium">
-        <Logo className="size-7" />
-        Pulse
-      </Link>
+      <div className="flex items-center gap-6">
+        <Link to="/" className="flex items-center gap-2 font-heading text-lg font-medium">
+          <Logo className="size-7" />
+          Pulse
+        </Link>
+        {isPending ? null : user ? (
+          <Link to="/picks" className="text-sm text-muted-foreground hover:text-foreground">
+            My Picks
+          </Link>
+        ) : null}
+      </div>
       {isPending ? null : user ? (
         <div className="flex items-center gap-3">
           <span className="text-sm text-muted-foreground">{user.name}</span>

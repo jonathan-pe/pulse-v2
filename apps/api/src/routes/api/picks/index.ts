@@ -1,6 +1,6 @@
 import { type FastifyPluginAsync } from 'fastify'
 import { requireAuth } from '../../../lib/require-auth.js'
-import { deletePick, listOpenMarketsWithPicks, upsertPick } from '../../../lib/picks.js'
+import { deletePick, listMyPicks, listOpenMarketsWithPicks, upsertPick } from '../../../lib/picks.js'
 
 const picksRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
   fastify.addHook('preHandler', requireAuth)
@@ -8,6 +8,11 @@ const picksRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
   fastify.get<{ Querystring: { league?: string } }>('/markets', async (request, reply) => {
     const events = await listOpenMarketsWithPicks(request.user!.id, request.query.league)
     return reply.send({ events })
+  })
+
+  fastify.get('/picks', async (request, reply) => {
+    const picks = await listMyPicks(request.user!.id)
+    return reply.send({ picks })
   })
 
   fastify.post<{ Body: { marketId?: string; outcomeIndex?: number } }>('/picks', async (request, reply) => {

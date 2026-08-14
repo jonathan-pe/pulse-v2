@@ -1,4 +1,4 @@
-import { ne, eq, and } from 'drizzle-orm'
+import { ne, eq, and, gte } from 'drizzle-orm'
 import { getDb } from '../../db/index.js'
 import { league, team, event, market } from '../../db/schema.js'
 import {
@@ -25,6 +25,12 @@ function isWithinDiscoveryWindow(gameStartTime: string | null): boolean {
   const cutoff = Date.now() + DISCOVERY_WINDOW_DAYS * 24 * 60 * 60 * 1000
   return new Date(gameStartTime).getTime() <= cutoff
 }
+
+// A market that never resolves on Polymarket (postponed game, stuck oracle)
+// would otherwise get re-fetched by ID forever. We don't track a game-end
+// time, so game start + a few days is used as a proxy for "long enough for
+// Polymarket to have resolved this by now."
+const RECHECK_MAX_AGE_DAYS = 3
 
 function chunk<T>(items: T[], size: number): T[][] {
   const chunks: T[][] = []
@@ -156,11 +162,12 @@ async function discoverLeague(leagueRow: { id: string; polymarketTagSlug: string
 // unresolved markets from Polymarket on every one of the 5 parallel runs.
 async function recheckUnresolvedMarkets(leagueId: string) {
   const db = getDb()
+  const cutoff = new Date(Date.now() - RECHECK_MAX_AGE_DAYS * 24 * 60 * 60 * 1000)
   const tracked = await db
     .select({ id: market.id, externalId: market.externalId, status: market.status })
     .from(market)
     .innerJoin(event, eq(market.eventId, event.id))
-    .where(and(ne(market.status, 'resolved'), eq(event.leagueId, leagueId)))
+    .where(and(ne(market.status, 'resolved'), eq(event.leagueId, leagueId), gte(event.startTime, cutoff)))
 
   for (const batch of chunk(tracked, PAGE_SIZE)) {
     const fresh = await fetchGammaMarketsByIds(batch.map((m) => m.externalId))
