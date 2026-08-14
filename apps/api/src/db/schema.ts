@@ -85,6 +85,7 @@ export const verification = pgTable(
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   accounts: many(account),
+  picks: many(pick),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -171,11 +172,38 @@ export const market = pgTable(
       .notNull()
       .default("scheduled"),
     resolvedOutcomeIndex: integer("resolved_outcome_index"), // 0 | 1, null until resolved
+    volume: numeric("volume").notNull().default("0"), // Polymarket volumeNum — ranks default line client-side, never used in scoring
     lastSyncedAt: timestamp("last_synced_at").notNull().defaultNow(),
   },
   (table) => [
     index("market_event_idx").on(table.eventId),
     index("market_status_idx").on(table.status),
+  ],
+);
+
+export const pick = pgTable(
+  "pick",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    marketId: text("market_id")
+      .notNull()
+      .references(() => market.id, { onDelete: "cascade" }),
+    outcomeIndex: integer("outcome_index").notNull(), // 0 | 1 — matches market.outcomeA/BName
+    priceAtPick: numeric("price_at_pick").notNull(), // snapshot at submit/edit time — market's own price gets overwritten on every ingestion sync
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("pick_user_market_idx").on(table.userId, table.marketId),
+    index("pick_market_idx").on(table.marketId),
   ],
 );
 
@@ -206,9 +234,15 @@ export const eventRelations = relations(event, ({ one, many }) => ({
   markets: many(market),
 }));
 
-export const marketRelations = relations(market, ({ one }) => ({
+export const marketRelations = relations(market, ({ one, many }) => ({
   event: one(event, {
     fields: [market.eventId],
     references: [event.id],
   }),
+  picks: many(pick),
+}));
+
+export const pickRelations = relations(pick, ({ one }) => ({
+  user: one(user, { fields: [pick.userId], references: [user.id] }),
+  market: one(market, { fields: [pick.marketId], references: [market.id] }),
 }));

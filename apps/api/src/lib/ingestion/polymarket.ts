@@ -111,6 +111,7 @@ async function upsertMarketRow(eventId: string, raw: GammaMarket) {
       outcomeBPrice: String(prices[1]),
       status,
       resolvedOutcomeIndex,
+      volume: String(raw.volumeNum),
       lastSyncedAt: new Date(),
     })
     .onConflictDoUpdate({
@@ -120,6 +121,7 @@ async function upsertMarketRow(eventId: string, raw: GammaMarket) {
         outcomeBPrice: String(prices[1]),
         status,
         resolvedOutcomeIndex,
+        volume: String(raw.volumeNum),
         lastSyncedAt: new Date(),
       },
     })
@@ -178,6 +180,7 @@ async function recheckUnresolvedMarkets(leagueId: string) {
           outcomeBPrice: String(prices[1]),
           status,
           resolvedOutcomeIndex,
+          volume: String(raw.volumeNum),
           lastSyncedAt: new Date(),
         })
         .where(eq(market.id, trackedRow.id))

@@ -4,6 +4,7 @@ import support from './plugins/support.js'
 import root from './routes/root.js'
 import authRoutes from './routes/api/auth/index.js'
 import ingestRoutes from './routes/api/ingest/polymarket.js'
+import picksRoutes from './routes/api/picks/index.js'
 
 export interface AppOptions extends FastifyServerOptions {}
 
@@ -24,6 +25,7 @@ const app: FastifyPluginAsync<AppOptions> = async (fastify, _opts): Promise<void
   await fastify.register(root)
   await fastify.register(authRoutes, { prefix: '/api/auth' })
   await fastify.register(ingestRoutes, { prefix: '/api/ingest' })
+  await fastify.register(picksRoutes, { prefix: '/api' })
 }
 
 export default app

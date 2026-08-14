@@ -26,6 +26,10 @@ export interface GammaMarket {
   line: number | null | undefined
   outcomes: string // JSON-encoded string array, e.g. '["Team A","Team B"]'
   outcomePrices: string // JSON-encoded string array, e.g. '["0.42","0.58"]'
+  // Already a plain float from Gamma, unlike outcomes/outcomePrices above.
+  // No isPrimary/isMain flag exists on this payload — volume is the closest
+  // signal to which alternate line the market has actually converged on.
+  volumeNum: number
   closed: boolean
   closedTime?: string
   umaResolutionStatus?: string
