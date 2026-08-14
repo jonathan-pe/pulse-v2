@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { EventRow } from '@/components/picks/event-row'
 import { LEAGUES, LeagueRail } from '@/components/picks/league-rail'
@@ -40,6 +40,16 @@ function PicksPage() {
   const allEvents = data?.events ?? []
   const events = allEvents.filter((e) => e.event.leagueId === league)
   const groups = groupByDate(events)
+
+  // Markets arrive after the initial league state is chosen, so the default
+  // ("nba") can land on a league with no events — jump to the first league
+  // that actually has games once we know which ones do.
+  useEffect(() => {
+    const loaded = data?.events ?? []
+    if (loaded.length === 0 || events.length > 0) return
+    const firstActive = LEAGUES.find((l) => loaded.some((e) => e.event.leagueId === l.id))
+    if (firstActive) setLeague(firstActive.id)
+  }, [data, events.length])
 
   return (
     <StagingProvider>

@@ -22,12 +22,13 @@ export function LeagueRail({
   for (const e of events) {
     counts.set(e.event.leagueId, (counts.get(e.event.leagueId) ?? 0) + 1)
   }
+  const activeLeagues = LEAGUES.filter((l) => (counts.get(l.id) ?? 0) > 0)
 
   return (
     <nav>
       <div className="mb-2 px-2.5 text-[11px] font-bold tracking-wide text-muted-foreground uppercase">Leagues</div>
       <div className="flex flex-col gap-0.5">
-        {LEAGUES.map((l) => {
+        {activeLeagues.map((l) => {
           const count = counts.get(l.id) ?? 0
           const isSelected = l.id === selected
           return (
@@ -40,7 +41,6 @@ export function LeagueRail({
                 isSelected
                   ? "bg-primary/10 text-primary"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                count === 0 && !isSelected && "opacity-50",
               )}
             >
               <span>{l.label}</span>
