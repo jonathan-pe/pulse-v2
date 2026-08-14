@@ -5,9 +5,10 @@ import { apiFetch, type EventWithMarkets } from '@/lib/api'
 // confirm — picking and confirming are two different code paths now.
 export const marketsQueryKey = ['markets'] as const
 
-export function useMarkets() {
+export function useMarkets(options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: marketsQueryKey,
     queryFn: () => apiFetch<{ events: EventWithMarkets[] }>('/markets'),
+    enabled: options.enabled,
   })
 }
