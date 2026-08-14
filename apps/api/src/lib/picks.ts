@@ -25,7 +25,6 @@ export interface MarketWithPick {
   outcomeBName: string
   outcomeBPrice: string
   volume: string
-  locked: boolean
   yourPick: { outcomeIndex: number; priceAtPick: string } | null
 }
 
@@ -48,8 +47,13 @@ export async function listOpenMarketsWithPicks(userId: string, leagueId?: string
     )
     .orderBy(event.startTime)
 
+  // This view is for making new picks, not reviewing old ones — anything no
+  // longer actionable is dropped entirely rather than shown disabled. Seeing
+  // what you're already locked into is the future My Picks page's job.
   const eventsById = new Map<string, EventWithMarkets>()
   for (const row of rows) {
+    if (!marketIsOpenForPicks(row.market, row.event, now)) continue
+
     let entry = eventsById.get(row.event.id)
     if (!entry) {
       entry = { event: row.event, markets: [] }
@@ -64,7 +68,6 @@ export async function listOpenMarketsWithPicks(userId: string, leagueId?: string
       outcomeBName: row.market.outcomeBName,
       outcomeBPrice: row.market.outcomeBPrice,
       volume: row.market.volume,
-      locked: !marketIsOpenForPicks(row.market, row.event, now),
       yourPick: row.pick ? { outcomeIndex: row.pick.outcomeIndex, priceAtPick: row.pick.priceAtPick } : null,
     })
   }

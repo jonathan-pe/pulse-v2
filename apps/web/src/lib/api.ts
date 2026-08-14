@@ -7,7 +7,6 @@ export interface MarketWithPick {
   outcomeBName: string
   outcomeBPrice: string
   volume: string
-  locked: boolean
   yourPick: { outcomeIndex: number; priceAtPick: string } | null
 }
 
