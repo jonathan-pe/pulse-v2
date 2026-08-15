@@ -1,5 +1,7 @@
+import { Link } from "@tanstack/react-router"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/hooks/useAuth"
 import { useStaging } from "@/hooks/usePicksStaging"
 
 const MARKET_LABEL = {
@@ -9,6 +11,7 @@ const MARKET_LABEL = {
 } as const
 
 export function PickSlip() {
+  const { user } = useAuth()
   const { staged, errors, isConfirming, unstage, clearStaged, confirmAll } = useStaging()
   const entries = [...staged.values()]
 
@@ -62,7 +65,17 @@ export function PickSlip() {
         </div>
       )}
 
-      {entries.length > 0 ? (
+      {entries.length > 0 && !user ? (
+        <div className="flex flex-col gap-1.5 px-4 py-3.5">
+          <p className="text-center text-xs text-muted-foreground">Sign in to confirm your picks.</p>
+          <Button size="sm" render={<Link to="/sign-in" />}>
+            Sign in
+          </Button>
+          <Button variant="ghost" size="sm" onClick={clearStaged}>
+            Clear
+          </Button>
+        </div>
+      ) : entries.length > 0 ? (
         <div className="flex flex-col gap-1.5 px-4 py-3.5">
           <Button size="sm" disabled={isConfirming} onClick={() => void confirmAll()}>
             {isConfirming ? "Confirming…" : `Confirm ${entries.length} ${entries.length === 1 ? "pick" : "picks"}`}
