@@ -13,9 +13,10 @@ export function useMarkets(options: { enabled?: boolean } = {}) {
   })
 }
 
-export function useMyPicks() {
+export function useMyPicks(options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: ['my-picks'],
     queryFn: () => apiFetch<{ picks: PickResult[] }>('/picks'),
+    enabled: options.enabled,
   })
 }
