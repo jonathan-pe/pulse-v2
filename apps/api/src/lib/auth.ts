@@ -1,8 +1,18 @@
 import { betterAuth } from 'better-auth/minimal'
 import { drizzleAdapter } from '@better-auth/drizzle-adapter'
 import { emailOTP, oneTap } from 'better-auth/plugins'
+import { Resend } from 'resend'
 import { getDb } from '../db/index.js'
 import * as schema from '../db/schema.js'
+
+const resend = new Resend(process.env.RESEND_API_KEY)
+
+const OTP_SUBJECT: Record<'sign-in' | 'email-verification' | 'forget-password' | 'change-email', string> = {
+  'sign-in': 'Your Pulse sign-in code',
+  'email-verification': 'Verify your Pulse email',
+  'forget-password': 'Reset your Pulse password',
+  'change-email': 'Confirm your new Pulse email',
+}
 
 // Public, browser-facing origin (app.playpulse.co in prod) — same-origin via
 // the apps/web rewrite, see ADR: Hosting & DevOps. NOT api.playpulse.co —
@@ -42,10 +52,12 @@ export const auth = betterAuth({
     emailOTP({
       overrideDefaultEmailVerification: true,
       async sendVerificationOTP({ email, otp, type }) {
-        // No Resend key yet — console fallback, matches v1's dev pattern.
-        // Swap for a real sendEmail() call once RESEND_API_KEY exists;
-        // shape of this callback won't need to change.
-        console.log(`[auth] ${type} OTP for ${email}: ${otp}`)
+        await resend.emails.send({
+          from: 'Pulse <auth@playpulse.co>',
+          to: email,
+          subject: OTP_SUBJECT[type],
+          text: `Your code is ${otp}. It expires in 5 minutes.`,
+        })
       },
     }),
     // Requires "Authorized JavaScript origins" configured in Google Cloud

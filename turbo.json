@@ -16,6 +16,7 @@
         "INGEST_SECRET",
         "GOOGLE_CLIENT_ID",
         "GOOGLE_CLIENT_SECRET",
+        "RESEND_API_KEY",
         "PULSE_PG_*"
       ]
     },

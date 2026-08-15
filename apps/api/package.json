@@ -24,16 +24,17 @@
   "license": "UNLICENSED",
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.6.26",
-    "@pulse/shared": "workspace:*",
     "@fastify/sensible": "^6.0.0",
     "@neondatabase/serverless": "^1.1.0",
+    "@pulse/shared": "workspace:*",
     "@vercel/functions": "^3.9.1",
     "better-auth": "^1.6.26",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
     "fastify": "^5.0.0",
     "fastify-cli": "^8.0.0",
-    "fastify-plugin": "^5.0.0"
+    "fastify-plugin": "^5.0.0",
+    "resend": "^6.20.0"
   },
   "devDependencies": {
     "@types/node": "^25.0.3",
