@@ -11,7 +11,7 @@ export interface MarketWithPick {
 }
 
 export interface EventWithMarkets {
-  event: { id: string; title: string; startTime: string; leagueId: string }
+  event: { id: string; title: string; startTime: string; leagueId: string; volume: string }
   markets: MarketWithPick[]
 }
 

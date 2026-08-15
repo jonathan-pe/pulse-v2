@@ -1,4 +1,4 @@
-import { and, desc, eq, ne } from 'drizzle-orm'
+import { and, desc, eq, ne, sql } from 'drizzle-orm'
 import { scorePick, type PickOutcomeStatus } from '@pulse/shared'
 import { getDb } from '../db/index.js'
 import { event, market, pick } from '../db/schema.js'
@@ -30,11 +30,14 @@ export interface MarketWithPick {
 }
 
 export interface EventWithMarkets {
-  event: { id: string; title: string; startTime: Date; leagueId: string }
+  event: { id: string; title: string; startTime: Date; leagueId: string; volume: string }
   markets: MarketWithPick[]
 }
 
-export async function listOpenMarketsWithPicks(userId: string, leagueId?: string): Promise<EventWithMarkets[]> {
+// Shared by listOpenMarketsWithPicks (browsing) — userId is optional so
+// signed-out visitors get the same query with yourPick always null, rather
+// than a separate public endpoint duplicating this filtering.
+async function fetchOpenEvents(userId: string | undefined, leagueId?: string): Promise<Map<string, EventWithMarkets>> {
   const db = getDb()
   const now = new Date()
 
@@ -42,11 +45,10 @@ export async function listOpenMarketsWithPicks(userId: string, leagueId?: string
     .select({ event, market, pick })
     .from(event)
     .innerJoin(market, eq(market.eventId, event.id))
-    .leftJoin(pick, and(eq(pick.marketId, market.id), eq(pick.userId, userId)))
+    .leftJoin(pick, and(eq(pick.marketId, market.id), userId ? eq(pick.userId, userId) : sql`false`))
     .where(
       and(ne(event.status, 'resolved'), ne(market.status, 'resolved'), leagueId ? eq(event.leagueId, leagueId) : undefined),
     )
-    .orderBy(event.startTime)
 
   // This view is for making new picks, not reviewing old ones — anything no
   // longer actionable is dropped entirely rather than shown disabled. Seeing
@@ -72,7 +74,12 @@ export async function listOpenMarketsWithPicks(userId: string, leagueId?: string
       yourPick: row.pick ? { outcomeIndex: row.pick.outcomeIndex, priceAtPick: row.pick.priceAtPick } : null,
     })
   }
-  return [...eventsById.values()]
+  return eventsById
+}
+
+export async function listOpenMarketsWithPicks(userId: string | undefined, leagueId?: string): Promise<EventWithMarkets[]> {
+  const eventsById = await fetchOpenEvents(userId, leagueId)
+  return [...eventsById.values()].sort((a, b) => a.event.startTime.getTime() - b.event.startTime.getTime())
 }
 
 async function loadMarketWithEvent(marketId: string) {

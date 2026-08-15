@@ -12,11 +12,23 @@ declare module 'fastify' {
   }
 }
 
-export async function requireAuth(request: FastifyRequest, reply: FastifyReply) {
+async function getSessionUser(request: FastifyRequest) {
   const fromNodeHeaders = await fromNodeHeadersPromise
   const session = await auth.api.getSession({ headers: fromNodeHeaders(request.headers) })
-  if (!session) {
+  return session?.user
+}
+
+export async function requireAuth(request: FastifyRequest, reply: FastifyReply) {
+  const user = await getSessionUser(request)
+  if (!user) {
     return reply.status(401).send({ error: 'Unauthorized', code: 'UNAUTHENTICATED' })
   }
-  request.user = session.user
+  request.user = user
+}
+
+// For routes that personalize when a session exists but must still work
+// signed-out (public event browsing) — never rejects, just leaves
+// request.user undefined.
+export async function optionalAuth(request: FastifyRequest) {
+  request.user = await getSessionUser(request)
 }
