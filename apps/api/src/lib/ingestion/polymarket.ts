@@ -84,11 +84,18 @@ async function upsertEventWithMarkets(leagueId: string, raw: GammaEvent, markets
       title: raw.title,
       startTime: gameStartTime,
       status: eventStatus,
+      volume: raw.volume == null ? '0' : String(raw.volume),
       lastSyncedAt: new Date(),
     })
     .onConflictDoUpdate({
       target: event.externalId,
-      set: { title: raw.title, startTime: gameStartTime, status: eventStatus, lastSyncedAt: new Date() },
+      set: {
+        title: raw.title,
+        startTime: gameStartTime,
+        status: eventStatus,
+        volume: raw.volume == null ? '0' : String(raw.volume),
+        lastSyncedAt: new Date(),
+      },
     })
     .returning({ id: event.id })
 
@@ -117,7 +124,7 @@ async function upsertMarketRow(eventId: string, raw: GammaMarket) {
       outcomeBPrice: String(prices[1]),
       status,
       resolvedOutcomeIndex,
-      volume: String(raw.volumeNum),
+      volume: raw.volumeNum == null ? '0' : String(raw.volumeNum),
       lastSyncedAt: new Date(),
     })
     .onConflictDoUpdate({
@@ -127,7 +134,7 @@ async function upsertMarketRow(eventId: string, raw: GammaMarket) {
         outcomeBPrice: String(prices[1]),
         status,
         resolvedOutcomeIndex,
-        volume: String(raw.volumeNum),
+        volume: raw.volumeNum == null ? '0' : String(raw.volumeNum),
         lastSyncedAt: new Date(),
       },
     })
@@ -187,7 +194,7 @@ async function recheckUnresolvedMarkets(leagueId: string) {
           outcomeBPrice: String(prices[1]),
           status,
           resolvedOutcomeIndex,
-          volume: String(raw.volumeNum),
+          volume: raw.volumeNum == null ? '0' : String(raw.volumeNum),
           lastSyncedAt: new Date(),
         })
         .where(eq(market.id, trackedRow.id))

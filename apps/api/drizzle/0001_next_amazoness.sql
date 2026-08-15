@@ -1,0 +1,1 @@
+ALTER TABLE "event" ADD COLUMN "volume" numeric DEFAULT '0' NOT NULL;

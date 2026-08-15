@@ -146,6 +146,10 @@ export const event = pgTable(
     status: text("status", { enum: ["scheduled", "closed", "resolved"] })
       .notNull()
       .default("scheduled"),
+    // Polymarket's event-level volume — rolls up all markets under the
+    // event, unlike market.volume which is per-market. Used to rank
+    // "popular" events on the home page; never used in scoring.
+    volume: numeric("volume").notNull().default("0"),
     lastSyncedAt: timestamp("last_synced_at").notNull().defaultNow(),
   },
   (table) => [index("event_league_status_idx").on(table.leagueId, table.status)],

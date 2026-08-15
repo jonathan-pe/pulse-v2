@@ -29,7 +29,9 @@ export interface GammaMarket {
   // Already a plain float from Gamma, unlike outcomes/outcomePrices above.
   // No isPrimary/isMain flag exists on this payload — volume is the closest
   // signal to which alternate line the market has actually converged on.
-  volumeNum: number
+  // Like `line` above, Polymarket sometimes omits this entirely (seen on
+  // low-volume spreads markets) rather than sending 0 or null.
+  volumeNum: number | null | undefined
   closed: boolean
   closedTime?: string
   umaResolutionStatus?: string
@@ -45,6 +47,11 @@ export interface GammaEvent {
   title: string
   startDate: string // market creation time, not game time — see GammaMarket.gameStartTime
   closed: boolean
+  // Event-level rollup across all its markets — distinct from (and more
+  // accurate than summing) each GammaMarket's own volumeNum. Used to rank
+  // "popular" events, never in scoring. Like GammaMarket.volumeNum, can be
+  // omitted by Polymarket entirely rather than sent as 0.
+  volume: number | null | undefined
   markets: GammaMarket[]
 }
 
