@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useMyPicks } from '@/hooks/usePicks'
 import { authClient } from '@/lib/auth-client'
+import { formatPoints, summarizePicks } from '@/lib/picks-summary'
 import type { PickOutcomeStatus, PickResult } from '@/lib/api'
 
 export const Route = createFileRoute('/picks')({
@@ -51,18 +52,11 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
-function formatPoints(points: number): string {
-  const sign = points >= 0 ? '+' : ''
-  return `${sign}${points.toFixed(1)}`
-}
-
 function MyPicksPage() {
   const { data, isPending, isError } = useMyPicks()
   const picks = data?.picks ?? []
 
-  const totalPoints = picks.reduce((sum, p) => sum + (p.points ?? 0), 0)
-  const won = picks.filter((p) => p.status === 'won').length
-  const lost = picks.filter((p) => p.status === 'lost').length
+  const { totalPoints, won, lost } = summarizePicks(picks)
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-10">
