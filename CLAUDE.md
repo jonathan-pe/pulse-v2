@@ -24,13 +24,15 @@ All from repo root via Turborepo unless noted (`pnpm turbo <task>` for build/lin
 Per-package, run from that package's directory (or `pnpm --filter <name> <script>`):
 
 - `apps/web`: `pnpm dev` (Vite on :5173, strict port), `pnpm build` (`vite build && tsc -b`), `pnpm lint` (oxlint)
-- `apps/api`: `pnpm dev` (builds TS then runs `fastify start` with watch, on :3000), `pnpm test` (`node --test` via `c8`+`ts-node`, single dir glob `test/**/*.ts`), `pnpm db:generate` / `db:push` / `db:studio` (drizzle-kit)
+- `apps/api`: `pnpm dev` (builds TS then runs `fastify start` with watch, on :3000), `pnpm test` (compiles `src/` + `test/` to `dist-test/` via `test/tsconfig.json`, then `node --test` via `c8` against the compiled `dist-test/test/**/*.test.js`), `pnpm db:generate` / `db:push` / `db:studio` (drizzle-kit)
 - `packages/shared`, `packages/schemas`: `pnpm build`, `pnpm test` (build to `dist/` then `node --test dist/**/*.test.js` — tests run against compiled JS, not source)
 
 To run a single test in `apps/api`, target the file directly after building:
 ```
-cd apps/api && npm run build:ts && node --test dist/<path-to>.test.js
+cd apps/api && npm run build:ts && tsc -p test/tsconfig.json && node --test dist-test/test/<path-to>.test.js
 ```
+
+From the repo root, `pnpm dev` runs `apps/web` and `apps/api` together (Turborepo, both `persistent`/uncached).
 
 New DB migrations: edit `apps/api/src/db/schema.ts`, then `pnpm db:generate` (writes to `apps/api/drizzle/`) and `pnpm db:push`.
 

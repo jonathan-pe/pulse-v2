@@ -5,7 +5,14 @@ import { Resend } from 'resend'
 import { getDb } from '../db/index.js'
 import * as schema from '../db/schema.js'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Lazy singleton, same reasoning as getDb(): avoids evaluating
+// RESEND_API_KEY at module-import time (Resend's constructor throws
+// immediately if it's missing, which broke tests that never touch email).
+let _resend: Resend | null = null
+function getResend() {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY)
+  return _resend
+}
 
 const OTP_SUBJECT: Record<'sign-in' | 'email-verification' | 'forget-password' | 'change-email', string> = {
   'sign-in': 'Your Pulse sign-in code',
@@ -52,7 +59,7 @@ export const auth = betterAuth({
     emailOTP({
       overrideDefaultEmailVerification: true,
       async sendVerificationOTP({ email, otp, type }) {
-        await resend.emails.send({
+        await getResend().emails.send({
           from: 'Pulse <auth@playpulse.co>',
           to: email,
           subject: OTP_SUBJECT[type],

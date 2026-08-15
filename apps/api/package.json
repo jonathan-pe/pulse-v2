@@ -9,7 +9,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "npm run build:ts && tsc -p test/tsconfig.json && c8 node --test -r ts-node/register \"test/**/*.ts\"",
+    "test": "npm run build:ts && tsc -p test/tsconfig.json && c8 node --test \"dist-test/test/**/*.test.js\"",
     "start": "npm run build:ts && fastify start -l info dist/plugin.js",
     "build": "tsc",
     "build:ts": "tsc",

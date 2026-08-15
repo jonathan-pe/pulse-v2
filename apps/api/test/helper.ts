@@ -7,7 +7,7 @@ export type TestContext = {
   after: typeof test.after
 }
 
-const AppPath = path.join(import.meta.dirname, '..', 'src', 'plugin.ts')
+const AppPath = path.join(import.meta.dirname, '..', 'src', 'plugin.js')
 
 // Fill in this config with all the configurations
 // needed for testing the application

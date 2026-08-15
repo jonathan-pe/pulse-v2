@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    env:
+      # Dummy values, not real secrets — apps/api's auth.ts calls getDb()
+      # eagerly at module-import time (inside betterAuth's config object),
+      # so the Fastify instance can't even build for tests without a
+      # syntactically-valid connection string, even though no test here
+      # actually queries the database.
+      PULSE_PG_DATABASE_URL: postgres://user:pass@localhost:5432/db
+      BETTER_AUTH_SECRET: ci-test-secret
+      BETTER_AUTH_URL: http://localhost:5173
+      GOOGLE_CLIENT_ID: ci-test
+      GOOGLE_CLIENT_SECRET: ci-test
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm check-types
+      - run: pnpm lint
+      - run: pnpm build
+      - run: pnpm test

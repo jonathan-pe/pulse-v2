@@ -1,24 +1,28 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
+  // Turbo only forwards env vars it's told about — anything not listed here
+  // is silently stripped from every task's runtime (build, test, dev, ...),
+  // both locally and on Vercel, even if it's set in the shell or in Vercel's
+  // own project env store. This caused a string of production crashes
+  // (missing BETTER_AUTH_SECRET etc.) that looked like unrelated bugs until
+  // the build log's own warning named the actual cause; the same stripping
+  // silently broke `apps/api`'s test task once a root-level `pnpm test`
+  // started actually invoking it (getDb() is called eagerly at module-import
+  // time from auth.ts, so a missing PULSE_PG_DATABASE_URL crashes any test
+  // that builds a Fastify instance, not just ones that touch the database).
+  "globalEnv": [
+    "BETTER_AUTH_SECRET",
+    "BETTER_AUTH_URL",
+    "INGEST_SECRET",
+    "GOOGLE_CLIENT_ID",
+    "GOOGLE_CLIENT_SECRET",
+    "RESEND_API_KEY",
+    "PULSE_PG_*"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**"],
-      // Turbo only forwards env vars it's told about — anything not listed
-      // here is silently stripped from the build/runtime on Vercel, even if
-      // it's set in the Vercel project's own env var store. This caused a
-      // string of production crashes (missing BETTER_AUTH_SECRET etc.) that
-      // looked like unrelated bugs until the build log's own warning named
-      // the actual cause.
-      "env": [
-        "BETTER_AUTH_SECRET",
-        "BETTER_AUTH_URL",
-        "INGEST_SECRET",
-        "GOOGLE_CLIENT_ID",
-        "GOOGLE_CLIENT_SECRET",
-        "RESEND_API_KEY",
-        "PULSE_PG_*"
-      ]
+      "outputs": ["dist/**"]
     },
     "check-types": {
       "dependsOn": ["^check-types", "build"]

@@ -5,6 +5,13 @@
   "description": "Pulse — free, points-based prediction game with performance analytics.",
   "license": "UNLICENSED",
   "packageManager": "pnpm@11.21.0",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "check-types": "turbo run check-types"
+  },
   "devDependencies": {
     "turbo": "^2.10.9"
   }
