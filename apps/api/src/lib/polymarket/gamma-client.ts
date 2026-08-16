@@ -99,13 +99,28 @@ export async function fetchGammaEvents(params: {
 // pass (§6.2 of the ingestion spec) to catch markets that flipped to
 // closed/resolved since they'd otherwise silently drop out of the
 // closed=false discovery query.
-export async function fetchGammaMarketsByIds(ids: string[]): Promise<GammaMarket[]> {
-  if (ids.length === 0) return []
+//
+// `/markets?id=` itself is implicitly filtered server-side — omitting `closed`
+// behaves like `closed=false` (only still-open markets come back) and
+// `closed=true` returns only closed ones; there's no single value that
+// returns both. Two requests, merged by id, is the only way to get a
+// tracked market back regardless of which state it's currently in.
+async function fetchGammaMarketsByIdsAndClosedState(ids: string[], closed: boolean): Promise<GammaMarket[]> {
   const url = new URL('/markets', GAMMA_BASE_URL)
   for (const id of ids) url.searchParams.append('id', id)
+  url.searchParams.set('closed', String(closed))
   const response = await typedFetch(url)
   if (!response.ok) {
     throw new Error(`Gamma API /markets failed: ${response.status} ${await response.text()}`)
   }
   return (await response.json()) as GammaMarket[]
+}
+
+export async function fetchGammaMarketsByIds(ids: string[]): Promise<GammaMarket[]> {
+  if (ids.length === 0) return []
+  const [open, closed] = await Promise.all([
+    fetchGammaMarketsByIdsAndClosedState(ids, false),
+    fetchGammaMarketsByIdsAndClosedState(ids, true),
+  ])
+  return [...open, ...closed]
 }
