@@ -56,12 +56,12 @@ function formatDate(iso: string): string {
 // Totals picks care about the combined score, not either team's individually;
 // spread/moneyline picks care about the score in the same team order the
 // event title already uses ("X vs. Y"), so just the numbers read naturally
-// underneath it.
+// on their own.
 function formatFinalScore(result: PickResult): string | null {
   const { teamAScore, teamBScore } = result.event
   if (teamAScore === null || teamBScore === null) return null
   if (result.market.marketType === 'totals') {
-    return `Total: ${teamAScore + teamBScore}`
+    return String(teamAScore + teamBScore)
   }
   return `${teamAScore}–${teamBScore}`
 }
@@ -96,8 +96,9 @@ function MyPicksPage() {
           <Table>
             <colgroup>
               <col />
-              <col style={{ width: 180 }} />
-              <col style={{ width: 110 }} />
+              <col style={{ width: 160 }} />
+              <col style={{ width: 80 }} />
+              <col style={{ width: 100 }} />
               <col style={{ width: 90 }} />
             </colgroup>
             <TableHeader>
@@ -107,6 +108,9 @@ function MyPicksPage() {
                 </TableHead>
                 <TableHead className="h-auto py-2.5 text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
                   Your pick
+                </TableHead>
+                <TableHead className="h-auto py-2.5 text-right text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
+                  Score
                 </TableHead>
                 <TableHead className="h-auto py-2.5 text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
                   Result
@@ -123,14 +127,14 @@ function MyPicksPage() {
                 <TableRow key={result.pick.id}>
                   <TableCell className="py-3 pl-4 text-left whitespace-normal">
                     <div className="truncate font-semibold">{result.event.title}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {formatDate(result.event.startTime)}
-                      {finalScore ? ` · ${finalScore}` : null}
-                    </div>
+                    <div className="text-xs text-muted-foreground">{formatDate(result.event.startTime)}</div>
                   </TableCell>
                   <TableCell className="py-3 text-left whitespace-normal">
                     <div>{pickDescription(result)}</div>
                     <div className="text-xs text-muted-foreground">{MARKET_LABEL[result.market.marketType]}</div>
+                  </TableCell>
+                  <TableCell className="py-3 text-right font-mono text-sm tabular-nums text-muted-foreground">
+                    {finalScore ?? '—'}
                   </TableCell>
                   <TableCell className="py-3 text-left">
                     <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide', STATUS_CLASS[result.status])}>
