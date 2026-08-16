@@ -95,32 +95,34 @@ export async function fetchGammaEvents(params: {
   })
 }
 
-// Repeated `id=` params, not comma-joined — used for the resolution-recheck
-// pass (§6.2 of the ingestion spec) to catch markets that flipped to
-// closed/resolved since they'd otherwise silently drop out of the
-// closed=false discovery query.
-//
-// `/markets?id=` itself is implicitly filtered server-side — omitting `closed`
-// behaves like `closed=false` (only still-open markets come back) and
-// `closed=true` returns only closed ones; there's no single value that
-// returns both. Two requests, merged by id, is the only way to get a
-// tracked market back regardless of which state it's currently in.
-async function fetchGammaMarketsByIdsAndClosedState(ids: string[], closed: boolean): Promise<GammaMarket[]> {
-  const url = new URL('/markets', GAMMA_BASE_URL)
-  for (const id of ids) url.searchParams.append('id', id)
-  url.searchParams.set('closed', String(closed))
-  const response = await typedFetch(url)
+// The batch list endpoint (`/markets?id=`) is implicitly filtered by closed
+// state server-side — omitting `closed` behaves like `closed=false`, and
+// there's no value that returns both open and closed markets together. The
+// singular endpoint has no such filter: it returns a market as-is regardless
+// of state, and 404s cleanly if the id genuinely doesn't exist. That makes it
+// the only reliable way to ask "what's this market's status right now,"
+// which is exactly what the resolution-recheck pass needs.
+async function fetchGammaMarketById(id: string): Promise<GammaMarket | null> {
+  const response = await typedFetch(new URL(`/markets/${id}`, GAMMA_BASE_URL))
+  if (response.status === 404) return null
   if (!response.ok) {
-    throw new Error(`Gamma API /markets failed: ${response.status} ${await response.text()}`)
+    throw new Error(`Gamma API /markets/${id} failed: ${response.status} ${await response.text()}`)
   }
-  return (await response.json()) as GammaMarket[]
+  return (await response.json()) as GammaMarket
 }
 
+// Used by the resolution-recheck pass (§6.2 of the ingestion spec) to catch
+// markets that flipped to closed/resolved since they'd otherwise silently
+// drop out of the closed=false discovery query. Bounded concurrency keeps
+// this from firing hundreds of simultaneous requests at Gamma in one go.
+const RECHECK_CONCURRENCY = 20
+
 export async function fetchGammaMarketsByIds(ids: string[]): Promise<GammaMarket[]> {
-  if (ids.length === 0) return []
-  const [open, closed] = await Promise.all([
-    fetchGammaMarketsByIdsAndClosedState(ids, false),
-    fetchGammaMarketsByIdsAndClosedState(ids, true),
-  ])
-  return [...open, ...closed]
+  const results: GammaMarket[] = []
+  for (let i = 0; i < ids.length; i += RECHECK_CONCURRENCY) {
+    const batch = ids.slice(i, i + RECHECK_CONCURRENCY)
+    const fetched = await Promise.all(batch.map(fetchGammaMarketById))
+    for (const market of fetched) if (market) results.push(market)
+  }
+  return results
 }
