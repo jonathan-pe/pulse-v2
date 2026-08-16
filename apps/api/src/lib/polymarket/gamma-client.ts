@@ -52,6 +52,11 @@ export interface GammaEvent {
   // "popular" events, never in scoring. Like GammaMarket.volumeNum, can be
   // omitted by Polymarket entirely rather than sent as 0.
   volume: number | null | undefined
+  // Real final score, "teamAScore-teamBScore" (e.g. "27-7") in the same
+  // outcome order as the event's own markets — not the market resolution
+  // (which side won), the actual score. Absent until the real-world game
+  // has a score to report; Polymarket sends no field at all until then.
+  score: string | null | undefined
   markets: GammaMarket[]
 }
 
@@ -123,6 +128,28 @@ export async function fetchGammaMarketsByIds(ids: string[]): Promise<GammaMarket
     const batch = ids.slice(i, i + RECHECK_CONCURRENCY)
     const fetched = await Promise.all(batch.map(fetchGammaMarketById))
     for (const market of fetched) if (market) results.push(market)
+  }
+  return results
+}
+
+// Same shape as fetchGammaMarketById — used by the score-recheck pass to
+// pick up an event's final score once Polymarket has one, independent of
+// whether its markets have formally resolved yet.
+async function fetchGammaEventById(id: string): Promise<GammaEvent | null> {
+  const response = await typedFetch(new URL(`/events/${id}`, GAMMA_BASE_URL))
+  if (response.status === 404) return null
+  if (!response.ok) {
+    throw new Error(`Gamma API /events/${id} failed: ${response.status} ${await response.text()}`)
+  }
+  return (await response.json()) as GammaEvent
+}
+
+export async function fetchGammaEventsByIds(ids: string[]): Promise<GammaEvent[]> {
+  const results: GammaEvent[] = []
+  for (let i = 0; i < ids.length; i += RECHECK_CONCURRENCY) {
+    const batch = ids.slice(i, i + RECHECK_CONCURRENCY)
+    const fetched = await Promise.all(batch.map(fetchGammaEventById))
+    for (const event of fetched) if (event) results.push(event)
   }
   return results
 }

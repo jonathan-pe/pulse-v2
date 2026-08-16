@@ -1,8 +1,9 @@
-import { ne, eq, and, gte } from 'drizzle-orm'
+import { ne, eq, and, gte, lte, isNull } from 'drizzle-orm'
 import { getDb } from '../../db/index.js'
 import { league, team, event, market } from '../../db/schema.js'
 import {
   fetchGammaEvents,
+  fetchGammaEventsByIds,
   fetchGammaMarketsByIds,
   isInScopeMarketType,
   parseOutcomes,
@@ -51,6 +52,19 @@ async function upsertTeam(leagueId: string, name: string): Promise<string> {
   return row.id
 }
 
+// "27-7" -> { teamAScore: 27, teamBScore: 7 }, in the same order as
+// teamAId/teamBId. Polymarket omits the field entirely (not "", not null)
+// until the real-world game has a score to report.
+function parseScore(raw: string | null | undefined): { teamAScore: number; teamBScore: number } | null {
+  if (!raw) return null
+  const parts = raw.split('-')
+  if (parts.length !== 2) return null
+  const teamAScore = Number(parts[0])
+  const teamBScore = Number(parts[1])
+  if (!Number.isFinite(teamAScore) || !Number.isFinite(teamBScore)) return null
+  return { teamAScore, teamBScore }
+}
+
 function deriveMarketStatus(raw: GammaMarket): 'scheduled' | 'closed' | 'resolved' {
   if (raw.closed && raw.umaResolutionStatus === 'resolved') return 'resolved'
   if (raw.closed) return 'closed'
@@ -74,6 +88,7 @@ async function upsertEventWithMarkets(leagueId: string, raw: GammaEvent, markets
 
   const gameStartTime = new Date(moneyline.gameStartTime!)
   const eventStatus = raw.closed ? 'closed' : 'scheduled'
+  const score = parseScore(raw.score)
   const [eventRow] = await db
     .insert(event)
     .values({
@@ -85,6 +100,8 @@ async function upsertEventWithMarkets(leagueId: string, raw: GammaEvent, markets
       startTime: gameStartTime,
       status: eventStatus,
       volume: raw.volume == null ? '0' : String(raw.volume),
+      teamAScore: score?.teamAScore ?? null,
+      teamBScore: score?.teamBScore ?? null,
       lastSyncedAt: new Date(),
     })
     .onConflictDoUpdate({
@@ -94,6 +111,8 @@ async function upsertEventWithMarkets(leagueId: string, raw: GammaEvent, markets
         startTime: gameStartTime,
         status: eventStatus,
         volume: raw.volume == null ? '0' : String(raw.volume),
+        teamAScore: score?.teamAScore ?? null,
+        teamBScore: score?.teamBScore ?? null,
         lastSyncedAt: new Date(),
       },
     })
@@ -202,6 +221,38 @@ async function recheckUnresolvedMarkets(leagueId: string) {
   }
 }
 
+// The final score lives on the event, not any individual market, and
+// Polymarket populates it once the real-world game ends — generally before
+// (and independent of) the markets' own UMA resolution. Scoped to events
+// that have actually started (a score can't exist before then) and haven't
+// had one recorded yet, within the same recheck window as market
+// resolution, so this stops costing requests once a score is captured.
+async function recheckEventScores(leagueId: string) {
+  const db = getDb()
+  const now = new Date()
+  const cutoff = new Date(now.getTime() - RECHECK_MAX_AGE_DAYS * 24 * 60 * 60 * 1000)
+  const tracked = await db
+    .select({ id: event.id, externalId: event.externalId })
+    .from(event)
+    .where(and(isNull(event.teamAScore), eq(event.leagueId, leagueId), gte(event.startTime, cutoff), lte(event.startTime, now)))
+
+  for (const batch of chunk(tracked, PAGE_SIZE)) {
+    const fresh = await fetchGammaEventsByIds(batch.map((e) => e.externalId))
+    const freshById = new Map(fresh.map((e) => [e.id, e]))
+
+    for (const trackedRow of batch) {
+      const raw = freshById.get(trackedRow.externalId)
+      if (!raw) continue // event no longer returned by Polymarket — leave as-is
+      const score = parseScore(raw.score)
+      if (!score) continue // no score to report yet
+      await db
+        .update(event)
+        .set({ teamAScore: score.teamAScore, teamBScore: score.teamBScore, lastSyncedAt: new Date() })
+        .where(eq(event.id, trackedRow.id))
+    }
+  }
+}
+
 export interface LeagueIngestionResult {
   league: string
   ok: boolean
@@ -224,6 +275,7 @@ export async function runIngestionForLeague(leagueRow: {
   try {
     await discoverLeague(leagueRow)
     await recheckUnresolvedMarkets(leagueRow.id)
+    await recheckEventScores(leagueRow.id)
     return { league: leagueRow.id, ok: true }
   } catch (err) {
     return { league: leagueRow.id, ok: false, error: String(err) }

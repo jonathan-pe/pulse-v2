@@ -26,7 +26,16 @@ export interface PickResult {
     outcomeAName: string
     outcomeBName: string
   }
-  event: { id: string; title: string; startTime: string; leagueId: string }
+  event: {
+    id: string
+    title: string
+    startTime: string
+    leagueId: string
+    teamAName: string
+    teamBName: string
+    teamAScore: number | null
+    teamBScore: number | null
+  }
   status: PickOutcomeStatus
   points: number | null
 }

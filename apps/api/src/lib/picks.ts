@@ -1,7 +1,11 @@
 import { and, desc, eq, ne, sql } from 'drizzle-orm'
+import { alias } from 'drizzle-orm/pg-core'
 import { scorePick, type PickOutcomeStatus } from '@pulse/shared'
 import { getDb } from '../db/index.js'
-import { event, market, pick } from '../db/schema.js'
+import { event, market, pick, team } from '../db/schema.js'
+
+const teamA = alias(team, 'pick_team_a')
+const teamB = alias(team, 'pick_team_b')
 
 // market.status only flips when the ingestion cron notices Polymarket closed
 // it, so relying on status alone would let a pick through for up to ~5
@@ -140,7 +144,18 @@ export interface PickResult {
     outcomeAName: string
     outcomeBName: string
   }
-  event: { id: string; title: string; startTime: Date; leagueId: string }
+  event: {
+    id: string
+    title: string
+    startTime: Date
+    leagueId: string
+    teamAName: string
+    teamBName: string
+    // Final score, teamA/teamB order — null until the real-world game ends,
+    // independent of (and generally set before) market resolution.
+    teamAScore: number | null
+    teamBScore: number | null
+  }
   status: PickOutcomeStatus
   points: number | null
 }
@@ -152,17 +167,19 @@ export interface PickResult {
 export async function listMyPicks(userId: string): Promise<PickResult[]> {
   const db = getDb()
   const rows = await db
-    .select({ pick, market, event })
+    .select({ pick, market, event, teamAName: teamA.name, teamBName: teamB.name })
     .from(pick)
     .innerJoin(market, eq(pick.marketId, market.id))
     .innerJoin(event, eq(market.eventId, event.id))
+    .innerJoin(teamA, eq(event.teamAId, teamA.id))
+    .innerJoin(teamB, eq(event.teamBId, teamB.id))
     .where(eq(pick.userId, userId))
     .orderBy(desc(event.startTime))
 
   return rows.map((row) => ({
     pick: row.pick,
     market: row.market,
-    event: row.event,
+    event: { ...row.event, teamAName: row.teamAName, teamBName: row.teamBName },
     ...scorePick({
       outcomeIndex: row.pick.outcomeIndex,
       priceAtPick: Number(row.pick.priceAtPick),

@@ -52,6 +52,20 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
+// Final score, not the market outcome — how close the pick actually was.
+// Totals picks care about the combined score, not either team's individually;
+// spread/moneyline picks care about the score in the same team order the
+// event title already uses ("X vs. Y"), so just the numbers read naturally
+// underneath it.
+function formatFinalScore(result: PickResult): string | null {
+  const { teamAScore, teamBScore } = result.event
+  if (teamAScore === null || teamBScore === null) return null
+  if (result.market.marketType === 'totals') {
+    return `Total: ${teamAScore + teamBScore}`
+  }
+  return `${teamAScore}–${teamBScore}`
+}
+
 function MyPicksPage() {
   const { data, isPending, isError } = useMyPicks()
   const picks = data?.picks ?? []
@@ -103,11 +117,16 @@ function MyPicksPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {picks.map((result) => (
+              {picks.map((result) => {
+                const finalScore = formatFinalScore(result)
+                return (
                 <TableRow key={result.pick.id}>
                   <TableCell className="py-3 pl-4 text-left whitespace-normal">
                     <div className="truncate font-semibold">{result.event.title}</div>
-                    <div className="text-xs text-muted-foreground">{formatDate(result.event.startTime)}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {formatDate(result.event.startTime)}
+                      {finalScore ? ` · ${finalScore}` : null}
+                    </div>
                   </TableCell>
                   <TableCell className="py-3 text-left whitespace-normal">
                     <div>{pickDescription(result)}</div>
@@ -127,7 +146,8 @@ function MyPicksPage() {
                     {result.points === null ? '—' : formatPoints(result.points)}
                   </TableCell>
                 </TableRow>
-              ))}
+                )
+              })}
             </TableBody>
           </Table>
         </div>

@@ -157,6 +157,14 @@ export const event = pgTable(
     // event, unlike market.volume which is per-market. Used to rank
     // "popular" events on the home page; never used in scoring.
     volume: numeric("volume").notNull().default("0"),
+    // Final score, in teamA/teamB order (same order as teamAId/teamBId,
+    // both anchored to the moneyline market's outcome order) — Polymarket's
+    // event payload carries a "score" string (e.g. "27-7") that resolves to
+    // the real final score, not just which side the market settled to.
+    // Populated by the score-recheck pass once the real-world game ends,
+    // independent of (and generally before) UMA market resolution.
+    teamAScore: integer("team_a_score"),
+    teamBScore: integer("team_b_score"),
     lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index("event_league_status_idx").on(table.leagueId, table.status)],
