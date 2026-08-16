@@ -78,7 +78,7 @@ function MyPicksPage() {
       ) : null}
 
       {picks.length > 0 ? (
-        <div className="overflow-hidden rounded-xl border border-border bg-card">
+        <div className="overflow-hidden rounded-xl bg-card">
           <Table>
             <colgroup>
               <col />

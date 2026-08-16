@@ -55,7 +55,7 @@ function HomeComponent() {
   })).filter(({ leagues }) => leagues.length > 0)
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-16">
+    <div className="mx-auto w-full max-w-7xl px-4 py-16">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-medium">{user ? `Welcome back, ${user.name}` : 'Pulse'}</h1>
         {user && picks.length > 0 ? (
@@ -98,7 +98,7 @@ function HomeComponent() {
                 key={league.id}
                 to="/sports/$sport/$league"
                 params={{ sport: league.sport, league: league.id }}
-                className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-1.5 text-sm font-semibold hover:bg-muted"
+                className="flex items-center gap-1.5 rounded-full bg-card px-3.5 py-1.5 text-sm font-semibold hover:bg-muted"
               >
                 {league.label}
                 <span className="font-mono text-xs font-normal tabular-nums text-muted-foreground">

@@ -30,16 +30,16 @@ export function Header() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
 
   return (
-    <header className="border-b border-border">
+    <header className="sticky top-0 z-40 border-b border-border bg-background">
       <div className="flex items-center gap-4 px-4 py-3">
-        <Link to="/" className="flex shrink-0 items-center gap-2 font-heading text-lg font-medium">
+        <Link to="/" className="flex shrink-0 items-center gap-2 font-heading text-xl font-medium">
           <Logo className="size-7" />
           Pulse
         </Link>
 
         <div className="relative mx-auto w-full max-w-md">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input disabled placeholder="Search Pulse… (coming soon)" className="pl-9" />
+          <Input disabled placeholder="Search Pulse… (coming soon)" className="pl-9 text-base" />
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
@@ -75,26 +75,24 @@ export function Header() {
             </DropdownMenu>
           ) : (
             <>
-              <Button variant="ghost" size="sm" render={<Link to="/sign-in" />}>
+              <Button variant="ghost" render={<Link to="/sign-in" />}>
                 Sign in
               </Button>
-              <Button size="sm" render={<Link to="/sign-up" />}>
-                Sign up
-              </Button>
+              <Button render={<Link to="/sign-up" />}>Sign up</Button>
             </>
           )}
         </div>
       </div>
 
-      <nav className="flex items-center gap-5 border-t border-border px-4 py-2">
+      <nav className="flex items-center gap-5 px-4 py-2">
         {EVENT_CATEGORIES.map((category) => (
           <Link
             key={category.to}
             to={category.to}
             className={
               pathname.startsWith(category.to)
-                ? 'text-sm font-semibold text-foreground'
-                : 'text-sm font-semibold text-muted-foreground hover:text-foreground'
+                ? 'text-base font-semibold text-foreground'
+                : 'text-base font-semibold text-muted-foreground hover:text-foreground'
             }
           >
             {category.label}

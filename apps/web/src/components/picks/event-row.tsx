@@ -47,7 +47,7 @@ export function EventRow({ data }: { data: EventWithMarkets }) {
   const underIndex = findOutcomeIndex(total, "Under")
 
   return (
-    <div className="mb-2.5 overflow-hidden rounded-xl border border-border bg-card">
+    <div className="mb-2.5 overflow-hidden rounded-xl bg-card">
       <div className="border-b border-border px-3.5 py-2 text-xs text-muted-foreground">
         {formatTime(data.event.startTime)}
       </div>

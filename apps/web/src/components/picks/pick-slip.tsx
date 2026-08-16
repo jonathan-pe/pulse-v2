@@ -16,7 +16,7 @@ export function PickSlip() {
   const entries = [...staged.values()]
 
   return (
-    <div className="sticky top-4 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+    <div className="sticky top-24 overflow-hidden rounded-2xl bg-card shadow-sm">
       <div className="flex items-center justify-between border-b border-border px-4 py-3.5">
         <span className="font-semibold">Picks</span>
         <span className="font-mono text-xs tabular-nums text-muted-foreground">
