@@ -142,7 +142,14 @@ export const event = pgTable(
       .notNull()
       .references(() => team.id),
     title: text("title").notNull(),
-    startTime: timestamp("start_time").notNull(),
+    // withTimezone: true — a bare `timestamp` column stores wall-clock
+    // digits with no zone, so a client reading it interprets those digits
+    // in ITS OWN local timezone. That happened to be harmless in production
+    // (Vercel's runtime is UTC) but silently shifted these by several hours
+    // any time they were read from a non-UTC machine (e.g. local dev, or a
+    // one-off diagnostic script) — these columns represent real instants,
+    // so they need to round-trip correctly regardless of reader timezone.
+    startTime: timestamp("start_time", { withTimezone: true }).notNull(),
     status: text("status", { enum: ["scheduled", "closed", "resolved"] })
       .notNull()
       .default("scheduled"),
@@ -150,7 +157,7 @@ export const event = pgTable(
     // event, unlike market.volume which is per-market. Used to rank
     // "popular" events on the home page; never used in scoring.
     volume: numeric("volume").notNull().default("0"),
-    lastSyncedAt: timestamp("last_synced_at").notNull().defaultNow(),
+    lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index("event_league_status_idx").on(table.leagueId, table.status)],
 );
@@ -177,7 +184,7 @@ export const market = pgTable(
       .default("scheduled"),
     resolvedOutcomeIndex: integer("resolved_outcome_index"), // 0 | 1, null until resolved
     volume: numeric("volume").notNull().default("0"), // Polymarket volumeNum — ranks default line client-side, never used in scoring
-    lastSyncedAt: timestamp("last_synced_at").notNull().defaultNow(),
+    lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
     index("market_event_idx").on(table.eventId),
@@ -199,8 +206,8 @@ export const pick = pgTable(
       .references(() => market.id, { onDelete: "cascade" }),
     outcomeIndex: integer("outcome_index").notNull(), // 0 | 1 — matches market.outcomeA/BName
     priceAtPick: numeric("price_at_pick").notNull(), // snapshot at submit/edit time — market's own price gets overwritten on every ingestion sync
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull(),

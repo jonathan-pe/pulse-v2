@@ -15,6 +15,13 @@
       "when": 1786770265315,
       "tag": "0001_next_amazoness",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786906669574,
+      "tag": "0002_eager_komodo",
+      "breakpoints": true
     }
   ]
 }
