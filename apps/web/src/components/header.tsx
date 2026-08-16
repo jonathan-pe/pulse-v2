@@ -31,7 +31,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background">
-      <div className="flex items-center gap-4 px-4 py-3">
+      <div className="mx-auto flex w-full max-w-7xl items-center gap-4 px-4 py-3">
         <Link to="/" className="flex shrink-0 items-center gap-2 font-heading text-xl font-medium">
           <Logo className="size-7" />
           Pulse
@@ -84,7 +84,7 @@ export function Header() {
         </div>
       </div>
 
-      <nav className="flex items-center gap-5 px-4 py-2">
+      <nav className="mx-auto flex w-full max-w-7xl items-center gap-5 px-4 py-2">
         {EVENT_CATEGORIES.map((category) => (
           <Link
             key={category.to}

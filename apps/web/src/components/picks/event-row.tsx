@@ -61,13 +61,13 @@ export function EventRow({ data }: { data: EventWithMarkets }) {
         <thead>
           <tr>
             <th className="border-b border-border" />
-            <th className="border-b border-l border-border py-1.5 text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
+            <th className="border-b border-border py-1.5 text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
               Moneyline
             </th>
-            <th className="border-b border-l border-border py-1.5 font-mono text-[11px] font-bold text-muted-foreground normal-case">
+            <th className="border-b border-border py-1.5 font-mono text-[11px] font-bold text-muted-foreground normal-case">
               {spread ? formatLine(spread) : "—"}
             </th>
-            <th className="border-b border-l border-border py-1.5 font-mono text-[11px] font-bold text-muted-foreground normal-case">
+            <th className="border-b border-border py-1.5 font-mono text-[11px] font-bold text-muted-foreground normal-case">
               {total ? formatLine(total) : "—"}
             </th>
           </tr>
@@ -83,21 +83,21 @@ export function EventRow({ data }: { data: EventWithMarkets }) {
             return (
               <tr key={rowIndex} className={rowIndex === 0 ? "border-b border-dashed border-border" : ""}>
                 <td className="px-3.5 py-2.5 text-left font-semibold">{teamName}</td>
-                <td className="border-l border-border p-0">
+                <td className="p-0">
                   {moneyline && mlIndex !== undefined ? (
                     <PriceCell market={moneyline} outcomeIndex={mlIndex} eventTitle={data.event.title} />
                   ) : (
                     <EmptyCell />
                   )}
                 </td>
-                <td className="border-l border-border p-0">
+                <td className="p-0">
                   {spread && spreadIndex !== undefined ? (
                     <PriceCell market={spread} outcomeIndex={spreadIndex} eventTitle={data.event.title} />
                   ) : (
                     <EmptyCell />
                   )}
                 </td>
-                <td className="border-l border-border p-0">
+                <td className="p-0">
                   {total && totalIndex !== undefined ? (
                     <PriceCell
                       market={total}
