@@ -1,3 +1,5 @@
+import { Card } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import type { EventWithMarkets, MarketWithPick } from "@/lib/api"
 import { EmptyCell, PriceCell } from "./price-cell"
 
@@ -47,32 +49,32 @@ export function EventRow({ data }: { data: EventWithMarkets }) {
   const underIndex = findOutcomeIndex(total, "Under")
 
   return (
-    <div className="mb-2.5 overflow-hidden rounded-xl bg-card">
+    <Card className="mb-2.5 gap-0 py-0">
       <div className="border-b border-border px-3.5 py-2 text-xs text-muted-foreground">
         {formatTime(data.event.startTime)}
       </div>
-      <table className="w-full border-collapse text-sm">
+      <Table className="border-collapse">
         <colgroup>
           <col />
           <col style={{ width: 84 }} />
           <col style={{ width: 88 }} />
           <col style={{ width: 88 }} />
         </colgroup>
-        <thead>
-          <tr>
-            <th className="border-b border-border" />
-            <th className="border-b border-border py-1.5 text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
+        <TableHeader>
+          <TableRow className="hover:bg-transparent">
+            <TableHead className="h-auto border-b border-border p-0" />
+            <TableHead className="h-auto border-b border-border py-1.5 text-center text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
               Moneyline
-            </th>
-            <th className="border-b border-border py-1.5 font-mono text-[11px] font-bold text-muted-foreground normal-case">
+            </TableHead>
+            <TableHead className="h-auto border-b border-border py-1.5 text-center font-mono text-[11px] font-bold text-muted-foreground normal-case">
               {spread ? formatLine(spread) : "—"}
-            </th>
-            <th className="border-b border-border py-1.5 font-mono text-[11px] font-bold text-muted-foreground normal-case">
+            </TableHead>
+            <TableHead className="h-auto border-b border-border py-1.5 text-center font-mono text-[11px] font-bold text-muted-foreground normal-case">
               {total ? formatLine(total) : "—"}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {([0, 1] as const).map((rowIndex) => {
             const teamName = teams[rowIndex]
             const mlIndex = findOutcomeIndex(moneyline, teamName)
@@ -81,23 +83,30 @@ export function EventRow({ data }: { data: EventWithMarkets }) {
             const totalLabel = rowIndex === 0 ? "Over" : "Under"
 
             return (
-              <tr key={rowIndex} className={rowIndex === 0 ? "border-b border-dashed border-border" : ""}>
-                <td className="px-3.5 py-2.5 text-left font-semibold">{teamName}</td>
-                <td className="p-0">
+              <TableRow
+                key={rowIndex}
+                className={
+                  rowIndex === 0
+                    ? "border-b border-dashed border-border hover:bg-transparent"
+                    : "border-b-0 hover:bg-transparent"
+                }
+              >
+                <TableCell className="px-3.5 py-2.5 text-left font-semibold whitespace-normal">{teamName}</TableCell>
+                <TableCell className="p-0">
                   {moneyline && mlIndex !== undefined ? (
                     <PriceCell market={moneyline} outcomeIndex={mlIndex} eventTitle={data.event.title} />
                   ) : (
                     <EmptyCell />
                   )}
-                </td>
-                <td className="p-0">
+                </TableCell>
+                <TableCell className="p-0">
                   {spread && spreadIndex !== undefined ? (
                     <PriceCell market={spread} outcomeIndex={spreadIndex} eventTitle={data.event.title} />
                   ) : (
                     <EmptyCell />
                   )}
-                </td>
-                <td className="p-0">
+                </TableCell>
+                <TableCell className="p-0">
                   {total && totalIndex !== undefined ? (
                     <PriceCell
                       market={total}
@@ -108,12 +117,12 @@ export function EventRow({ data }: { data: EventWithMarkets }) {
                   ) : (
                     <EmptyCell />
                   )}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             )
           })}
-        </tbody>
-      </table>
-    </div>
+        </TableBody>
+      </Table>
+    </Card>
   )
 }

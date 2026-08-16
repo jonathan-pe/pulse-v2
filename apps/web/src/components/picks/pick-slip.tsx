@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router"
+import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/hooks/useAuth"
@@ -42,14 +43,16 @@ export function PickSlip() {
                   error && "bg-destructive/5",
                 )}
               >
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon-xs"
                   onClick={() => unstage(entry.marketId)}
                   aria-label="Remove from picks"
-                  className="absolute top-2.5 right-3 flex h-[18px] w-[18px] items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                  className="absolute top-2.5 right-3 size-[18px] text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                 >
-                  ✕
-                </button>
+                  <X className="size-3" />
+                </Button>
                 <div className="mb-1 truncate pr-5 text-[11.5px] text-muted-foreground">{entry.eventTitle}</div>
                 <div className="flex items-center justify-between gap-2 pr-5">
                   <span className="text-[13.5px] font-semibold">{entry.outcomeName}</span>

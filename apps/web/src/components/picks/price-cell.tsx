@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useStaging } from "@/hooks/usePicksStaging"
 import type { MarketWithPick } from "@/lib/api"
@@ -24,8 +25,9 @@ export function PriceCell({
   const price = outcomeIndex === 0 ? market.outcomeAPrice : market.outcomeBPrice
 
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
       onClick={() => {
         if (confirmed) return
         stage({
@@ -39,17 +41,17 @@ export function PriceCell({
         })
       }}
       className={cn(
-        "flex w-full flex-col items-center justify-center gap-0.5 py-2 text-center transition-colors",
+        "h-auto w-full flex-col gap-0.5 rounded-none border-0 py-2 text-center",
         confirmed
-          ? "bg-primary text-primary-foreground"
+          ? "bg-primary text-primary-foreground hover:bg-primary"
           : isStaged
-            ? "bg-primary/10 text-primary ring-primary ring-1 ring-inset"
+            ? "bg-primary/10 text-primary ring-primary ring-1 ring-inset hover:bg-primary/10"
             : "hover:bg-muted",
       )}
     >
       {label ? <span className="text-[10px] opacity-70">{label}</span> : null}
       <span className="font-mono text-[13px] font-semibold tabular-nums">{(Number(price) * 100).toFixed(1)}%</span>
-    </button>
+    </Button>
   )
 }
 
