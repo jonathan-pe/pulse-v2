@@ -73,7 +73,7 @@ function MyPicksPage() {
   const { totalPoints, won, lost } = summarizePicks(picks)
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-10">
+    <div className="mx-auto w-full max-w-7xl px-4 py-10">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-medium">My Picks</h1>
         {picks.length > 0 ? (
@@ -109,7 +109,7 @@ function MyPicksPage() {
                 <TableHead className="h-auto py-2.5 text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
                   Your pick
                 </TableHead>
-                <TableHead className="h-auto py-2.5 text-right text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
+                <TableHead className="h-auto py-2.5 text-left text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
                   Score
                 </TableHead>
                 <TableHead className="h-auto py-2.5 text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
@@ -133,7 +133,7 @@ function MyPicksPage() {
                     <div>{pickDescription(result)}</div>
                     <div className="text-xs text-muted-foreground">{MARKET_LABEL[result.market.marketType]}</div>
                   </TableCell>
-                  <TableCell className="py-3 text-right font-mono text-sm tabular-nums text-muted-foreground">
+                  <TableCell className="py-3 text-left font-mono text-sm tabular-nums text-muted-foreground">
                     {finalScore ?? '—'}
                   </TableCell>
                   <TableCell className="py-3 text-left">
