@@ -32,7 +32,10 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background">
       <div className="mx-auto flex w-full max-w-7xl items-center gap-4 px-4 py-3">
-        <Link to="/" className="flex shrink-0 items-center gap-2 font-heading text-xl font-medium">
+        <Link
+          to="/"
+          className="flex shrink-0 items-center gap-2 font-heading text-xl font-medium transition-opacity hover:opacity-80"
+        >
           <Logo className="size-7" />
           Pulse
         </Link>
@@ -47,7 +50,10 @@ export function Header() {
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
-                  <button type="button" className="rounded-full outline-offset-2">
+                  <button
+                    type="button"
+                    className="rounded-full outline-offset-2 transition-opacity hover:opacity-80"
+                  >
                     <Avatar>
                       <AvatarFallback>{initials(user.name)}</AvatarFallback>
                     </Avatar>

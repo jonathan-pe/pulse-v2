@@ -11,12 +11,17 @@ export function PriceCell({
   market,
   outcomeIndex,
   eventTitle,
-  label,
+  topLabel,
+  outcomeLabel,
 }: {
   market: MarketWithPick
   outcomeIndex: 0 | 1
   eventTitle: string
-  label?: string
+  // Short line/total text shown on the button itself, e.g. "-1.5" or "Over 8.5".
+  topLabel?: string
+  // Overrides the outcome name sent to the pick slip (defaults to the raw
+  // outcome name, e.g. a team) so spreads/totals can carry their line there too.
+  outcomeLabel?: string
 }) {
   const { staged, stage } = useStaging()
   const confirmed = market.yourPick?.outcomeIndex === outcomeIndex
@@ -36,25 +41,29 @@ export function PriceCell({
           eventTitle,
           marketType: market.marketType,
           line: market.line,
-          outcomeName: label ? `${label} ${market.line ?? ""}`.trim() : outcomeName,
+          outcomeName: outcomeLabel ?? outcomeName,
           price,
         })
       }}
       className={cn(
-        "h-auto w-full flex-col gap-0.5 rounded-none border-0 py-2 text-center",
+        "h-[52px] w-full flex-col justify-center gap-1 rounded-md border text-center shadow-sm transition-colors",
         confirmed
-          ? "bg-primary text-primary-foreground hover:bg-primary"
+          ? "border-primary bg-primary text-primary-foreground hover:bg-primary"
           : isStaged
-            ? "bg-primary/10 text-primary ring-primary ring-1 ring-inset hover:bg-primary/10"
-            : "hover:bg-muted",
+            ? "border-primary bg-primary/10 text-primary hover:bg-primary/10"
+            : "border-border bg-muted/40 hover:bg-muted",
       )}
     >
-      {label ? <span className="text-[10px] opacity-70">{label}</span> : null}
-      <span className="font-mono text-[13px] font-semibold tabular-nums">{(Number(price) * 100).toFixed(1)}%</span>
+      {topLabel ? <span className="font-mono text-[11px] font-semibold opacity-70">{topLabel}</span> : null}
+      <span className="font-mono text-[15px] font-bold tabular-nums">{(Number(price) * 100).toFixed(1)}%</span>
     </Button>
   )
 }
 
 export function EmptyCell() {
-  return <div className="flex items-center justify-center py-2 text-xs text-muted-foreground/50">—</div>
+  return (
+    <div className="flex h-[52px] items-center justify-center rounded-md border border-dashed border-border text-center">
+      <span className="font-mono text-[15px] text-muted-foreground/50">—</span>
+    </div>
+  )
 }

@@ -1,12 +1,23 @@
 import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { cn } from "@/lib/utils"
 import type { EventWithMarkets, MarketWithPick } from "@/lib/api"
 import { EmptyCell, PriceCell } from "./price-cell"
 
-function formatLine(market: MarketWithPick): string {
+// `line` is stored signed relative to outcome index 0 within its own market
+// (independent of moneyline's outcome order) — the paired outcome always
+// carries the opposite sign, e.g. "-1.5" for the favorite and "+1.5" for the
+// underdog on the same spread market.
+function formatSpreadTopLabel(market: MarketWithPick, outcomeIndex: 0 | 1): string {
   if (market.line === null) return ""
   const n = Number(market.line)
-  return n < 0 ? `−${Math.abs(n)}` : String(n)
+  const signed = outcomeIndex === 0 ? n : -n
+  return signed > 0 ? `+${signed}` : `−${Math.abs(signed)}`
+}
+
+function formatTotalTopLabel(market: MarketWithPick, label: "Over" | "Under"): string {
+  if (market.line === null) return label
+  return `${label} ${market.line}`
 }
 
 function formatTime(iso: string): string {
@@ -50,79 +61,91 @@ export function EventRow({ data }: { data: EventWithMarkets }) {
 
   return (
     <Card className="mb-2.5 gap-0 py-0">
-      <div className="border-b border-border px-3.5 py-2 text-xs text-muted-foreground">
-        {formatTime(data.event.startTime)}
-      </div>
-      <Table className="border-collapse">
-        <colgroup>
-          <col />
-          <col style={{ width: 84 }} />
-          <col style={{ width: 88 }} />
-          <col style={{ width: 88 }} />
-        </colgroup>
-        <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            <TableHead className="h-auto border-b border-border p-0" />
-            <TableHead className="h-auto border-b border-border py-1.5 text-center text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
-              Moneyline
-            </TableHead>
-            <TableHead className="h-auto border-b border-border py-1.5 text-center font-mono text-[11px] font-bold text-muted-foreground normal-case">
-              {spread ? formatLine(spread) : "—"}
-            </TableHead>
-            <TableHead className="h-auto border-b border-border py-1.5 text-center font-mono text-[11px] font-bold text-muted-foreground normal-case">
-              {total ? formatLine(total) : "—"}
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {([0, 1] as const).map((rowIndex) => {
-            const teamName = teams[rowIndex]
-            const mlIndex = findOutcomeIndex(moneyline, teamName)
-            const spreadIndex = findOutcomeIndex(spread, teamName)
-            const totalIndex = rowIndex === 0 ? overIndex : underIndex
-            const totalLabel = rowIndex === 0 ? "Over" : "Under"
+      <div className="p-3">
+        <Table>
+          <colgroup>
+            <col />
+            <col style={{ width: 92 }} />
+            <col style={{ width: 96 }} />
+            <col style={{ width: 96 }} />
+          </colgroup>
+          <TableHeader className="[&_tr]:border-b-0">
+            <TableRow className="border-b-0 hover:bg-transparent">
+              <TableHead className="h-auto py-0 pr-3 pb-3 pl-0 text-xs font-normal text-muted-foreground">
+                {formatTime(data.event.startTime)}
+              </TableHead>
+              <TableHead className="h-auto py-0 pr-1 pb-3 pl-0 text-center text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
+                Moneyline
+              </TableHead>
+              <TableHead className="h-auto px-1 py-0 pb-3 text-center text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
+                Spread
+              </TableHead>
+              <TableHead className="h-auto py-0 pr-0 pb-3 pl-1 text-center text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
+                Total
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {([0, 1] as const).map((rowIndex) => {
+              const teamName = teams[rowIndex]
+              const mlIndex = findOutcomeIndex(moneyline, teamName)
+              const spreadIndex = findOutcomeIndex(spread, teamName)
+              const totalIndex = rowIndex === 0 ? overIndex : underIndex
+              const totalLabel = rowIndex === 0 ? "Over" : "Under"
+              const spreadTopLabel =
+                spread && spreadIndex !== undefined ? formatSpreadTopLabel(spread, spreadIndex) : ""
+              const totalTopLabel = total && totalIndex !== undefined ? formatTotalTopLabel(total, totalLabel) : ""
+              // 8px gap between the two rows, split evenly between them (rather
+              // than on one side) so it reads the same as the 8px gap Polymarket
+              // uses between its own stacked outcome rows.
+              const rowSpacing = rowIndex === 0 ? "pt-0 pb-1" : "pt-1 pb-0"
 
-            return (
-              <TableRow
-                key={rowIndex}
-                className={
-                  rowIndex === 0
-                    ? "border-b border-dashed border-border hover:bg-transparent"
-                    : "border-b-0 hover:bg-transparent"
-                }
-              >
-                <TableCell className="px-3.5 py-2.5 text-left font-semibold whitespace-normal">{teamName}</TableCell>
-                <TableCell className="p-0">
-                  {moneyline && mlIndex !== undefined ? (
-                    <PriceCell market={moneyline} outcomeIndex={mlIndex} eventTitle={data.event.title} />
-                  ) : (
-                    <EmptyCell />
-                  )}
-                </TableCell>
-                <TableCell className="p-0">
-                  {spread && spreadIndex !== undefined ? (
-                    <PriceCell market={spread} outcomeIndex={spreadIndex} eventTitle={data.event.title} />
-                  ) : (
-                    <EmptyCell />
-                  )}
-                </TableCell>
-                <TableCell className="p-0">
-                  {total && totalIndex !== undefined ? (
-                    <PriceCell
-                      market={total}
-                      outcomeIndex={totalIndex}
-                      eventTitle={data.event.title}
-                      label={totalLabel}
-                    />
-                  ) : (
-                    <EmptyCell />
-                  )}
-                </TableCell>
-              </TableRow>
-            )
-          })}
-        </TableBody>
-      </Table>
+              return (
+                <TableRow key={rowIndex} className="border-b-0 hover:bg-transparent">
+                  <TableCell
+                    className={cn("pr-3 pl-0 text-left font-semibold whitespace-normal", rowSpacing)}
+                  >
+                    {teamName}
+                  </TableCell>
+                  <TableCell className={cn("pr-1 pl-0", rowSpacing)}>
+                    {moneyline && mlIndex !== undefined ? (
+                      <PriceCell market={moneyline} outcomeIndex={mlIndex} eventTitle={data.event.title} />
+                    ) : (
+                      <EmptyCell />
+                    )}
+                  </TableCell>
+                  <TableCell className={cn("px-1", rowSpacing)}>
+                    {spread && spreadIndex !== undefined ? (
+                      <PriceCell
+                        market={spread}
+                        outcomeIndex={spreadIndex}
+                        eventTitle={data.event.title}
+                        topLabel={spreadTopLabel}
+                        outcomeLabel={`${teamName} ${spreadTopLabel}`.trim()}
+                      />
+                    ) : (
+                      <EmptyCell />
+                    )}
+                  </TableCell>
+                  <TableCell className={cn("pr-0 pl-1", rowSpacing)}>
+                    {total && totalIndex !== undefined ? (
+                      <PriceCell
+                        market={total}
+                        outcomeIndex={totalIndex}
+                        eventTitle={data.event.title}
+                        topLabel={totalTopLabel}
+                        outcomeLabel={totalTopLabel}
+                      />
+                    ) : (
+                      <EmptyCell />
+                    )}
+                  </TableCell>
+                </TableRow>
+              )
+            })}
+          </TableBody>
+        </Table>
+      </div>
     </Card>
   )
 }
