@@ -6,7 +6,6 @@ import { PickSlip } from '@/components/picks/pick-slip'
 import { StagingProvider } from '@/hooks/usePicksStaging'
 import { useAuth } from '@/hooks/useAuth'
 import { useMarkets, useMyPicks } from '@/hooks/usePicks'
-import { formatPoints, summarizePicks } from '@/lib/picks-summary'
 import { findLeague, LEAGUES, SPORTS } from '@/lib/sports'
 import type { EventWithMarkets, PickResult } from '@/lib/api'
 
@@ -16,10 +15,32 @@ export const Route = createFileRoute('/')({
 
 const POPULAR_LIMIT = 6
 const FAVORITE_LEAGUES_LIMIT = 3
+const TRENDING_LEAGUES_LIMIT = 5
 
 function popularEvents(events: EventWithMarkets[]): EventWithMarkets[] {
   return [...events].sort((a, b) => Number(b.event.volume) - Number(a.event.volume)).slice(0, POPULAR_LIMIT)
 }
+
+// Ranks leagues by total open-event volume so the top-of-page header reflects
+// what's actually trading right now instead of a hardcoded league list.
+function trendingLeagues(events: EventWithMarkets[]) {
+  const volumeByLeague = new Map<string, number>()
+  for (const e of events) {
+    volumeByLeague.set(e.event.leagueId, (volumeByLeague.get(e.event.leagueId) ?? 0) + Number(e.event.volume))
+  }
+  return [...volumeByLeague.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, TRENDING_LEAGUES_LIMIT)
+    .map(([leagueId, volume]) => ({ league: findLeague(leagueId), volume }))
+    .filter((entry): entry is { league: NonNullable<ReturnType<typeof findLeague>>; volume: number } => !!entry.league)
+}
+
+const compactVolume = new Intl.NumberFormat('en-US', {
+  notation: 'compact',
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 1,
+})
 
 // Which leagues a user actually picks in, not which they browse — a proxy
 // for interest that needs no new schema or manual favoriting UI.
@@ -42,8 +63,8 @@ function HomeComponent() {
 
   const events = marketsData?.events ?? []
   const picks = picksData?.picks ?? []
-  const { totalPoints, won, lost } = summarizePicks(picks)
   const favLeagues = favoriteLeagues(picks)
+  const trending = trendingLeagues(events)
 
   const counts = new Map<string, number>()
   for (const e of events) {
@@ -55,33 +76,50 @@ function HomeComponent() {
   })).filter(({ leagues }) => leagues.length > 0)
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-16">
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-3xl font-medium">{user ? `Welcome back, ${user.name}` : 'Pulse'}</h1>
-        {user && picks.length > 0 ? (
-          <Link
-            to="/picks"
-            className="font-mono text-sm tabular-nums text-muted-foreground hover:text-foreground"
-          >
-            {won}–{lost}
-            {' · '}
-            <span className={totalPoints >= 0 ? 'text-primary' : 'text-destructive'}>{formatPoints(totalPoints)} pts</span>
-          </Link>
-        ) : null}
-      </div>
-      <p className="mb-8 text-sm text-muted-foreground">
-        Pick outcomes on real sports markets and get scored on points and calibration.
-      </p>
-
+    <div className="mx-auto w-full max-w-7xl px-4 py-8">
       {!isAuthPending && !user ? (
-        <div className="mb-10 flex items-center gap-2">
-          <Button size="sm" render={<Link to="/sign-up" />}>
-            Sign up
-          </Button>
-          <Button variant="outline" size="sm" render={<Link to="/sign-in" />}>
-            Sign in
-          </Button>
-          <span className="text-sm text-muted-foreground">to start making picks.</span>
+        <div className="mb-10 flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="mb-1 text-lg font-semibold text-foreground">Pick winners. Get scored on more than wins.</h2>
+            <p className="max-w-md text-sm text-muted-foreground">
+              Free picks on real sports markets — points for what you got right, plus a calibration score for how
+              well your confidence matched reality.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+              <span>Free to play</span>
+              <span aria-hidden="true">·</span>
+              <span>Real market odds</span>
+              <span aria-hidden="true">·</span>
+              <span>Points + calibration scoring</span>
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <Button render={<Link to="/sign-up" />}>Sign up</Button>
+            <Button variant="outline" render={<Link to="/sign-in" />}>
+              Sign in
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
+      {trending.length > 0 ? (
+        <div className="mb-10">
+          <div className="mb-2.5 text-xs font-bold tracking-wide text-muted-foreground uppercase">Trending</div>
+          <div className="flex flex-wrap gap-2">
+            {trending.map(({ league, volume }) => (
+              <Link
+                key={league.id}
+                to="/sports/$sport/$league"
+                params={{ sport: league.sport, league: league.id }}
+                className="flex items-center gap-1.5 rounded-full bg-card px-3.5 py-1.5 text-sm font-semibold hover:bg-muted"
+              >
+                {league.label}
+                <span className="font-mono text-xs font-normal tabular-nums text-muted-foreground">
+                  {compactVolume.format(volume)}
+                </span>
+              </Link>
+            ))}
+          </div>
         </div>
       ) : null}
 
