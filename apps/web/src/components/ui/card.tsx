@@ -5,14 +5,21 @@ import { cn } from "@/lib/utils"
 function Card({
   className,
   size = "default",
+  hoverable = false,
   ...props
-}: React.ComponentProps<"div"> & { size?: "default" | "sm" }) {
+}: React.ComponentProps<"div"> & { size?: "default" | "sm"; hoverable?: boolean }) {
   return (
     <div
       data-slot="card"
       data-size={size}
       className={cn(
         "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-xl bg-card py-(--card-spacing) text-sm text-card-foreground ring-1 ring-foreground/10 [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
+        // Clickable cards only — reserves the lift + brand-tinted shadow for
+        // things that respond to a click, so static cards (e.g. a single-
+        // league sport tile with no link) stay flat rather than implying
+        // interactivity they don't have.
+        hoverable &&
+          "transition-[transform,box-shadow] duration-150 ease-out hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-12px_var(--primary)]",
         className
       )}
       {...props}

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { EventRow } from '@/components/picks/event-row'
 import { PickSlip } from '@/components/picks/pick-slip'
 import { StagingProvider } from '@/hooks/usePicksStaging'
@@ -78,20 +79,15 @@ function HomeComponent() {
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8">
       {!isAuthPending && !user ? (
-        <div className="mb-10 flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-10 flex flex-col gap-4 rounded-2xl border border-border bg-card p-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="mb-1 text-lg font-semibold text-foreground">Pick winners. Get scored on more than wins.</h2>
-            <p className="max-w-md text-sm text-muted-foreground">
-              Free picks on real sports markets — points for what you got right, plus a calibration score for how
-              well your confidence matched reality.
-            </p>
-            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-              <span>Free to play</span>
-              <span aria-hidden="true">·</span>
-              <span>Real market odds</span>
-              <span aria-hidden="true">·</span>
-              <span>Points + calibration scoring</span>
+            <div className="mb-2 font-mono text-[11px] font-bold tracking-wide text-muted-foreground uppercase">
+              Free · every game · every week
             </div>
+            <h2 className="mb-1 font-heading text-2xl font-semibold text-foreground">Pick winners.</h2>
+            <p className="max-w-md text-sm text-muted-foreground">
+              Points for what you got right, plus a calibration score for how well your confidence matched reality.
+            </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <Button render={<Link to="/sign-up" />}>Sign up</Button>
@@ -149,7 +145,19 @@ function HomeComponent() {
       ) : null}
 
       <div className="mb-2.5 text-xs font-bold tracking-wide text-muted-foreground uppercase">Popular</div>
-      {isMarketsPending ? <p className="mb-10 text-sm text-muted-foreground">Loading markets…</p> : null}
+      {isMarketsPending ? (
+        <div className="mb-10 flex flex-col gap-2.5">
+          {Array.from({ length: POPULAR_LIMIT }, (_, i) => (
+            <div key={i} className="flex items-center gap-4 rounded-xl bg-card p-4 ring-1 ring-foreground/10">
+              <Skeleton className="h-4 w-12 shrink-0" />
+              <Skeleton className="h-4 flex-1" />
+              <Skeleton className="h-7 w-24 shrink-0" />
+              <Skeleton className="h-7 w-24 shrink-0" />
+              <Skeleton className="h-7 w-24 shrink-0" />
+            </div>
+          ))}
+        </div>
+      ) : null}
       {isMarketsError ? <p className="mb-10 text-sm text-destructive">Couldn't load markets. Try refreshing.</p> : null}
       {!isMarketsPending && !isMarketsError && events.length === 0 ? (
         <p className="mb-10 text-sm text-muted-foreground">No open games right now — check back soon.</p>
@@ -172,7 +180,7 @@ function HomeComponent() {
           <div className="mb-2.5 text-xs font-bold tracking-wide text-muted-foreground uppercase">Browse by sport</div>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
             {activeSports.map(({ sport, leagues }) => (
-              <Card key={sport.id}>
+              <Card key={sport.id} hoverable={leagues.length > 1}>
                 <CardHeader>
                   <CardTitle>
                     {leagues.length > 1 ? (
