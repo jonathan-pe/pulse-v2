@@ -6,6 +6,7 @@ export const SPORTS = [
 ] as const
 
 export type SportId = (typeof SPORTS)[number]['id']
+export type Sport = (typeof SPORTS)[number]
 
 export const LEAGUES = [
   { id: 'nba', label: 'NBA', sport: 'basketball' },
@@ -16,6 +17,7 @@ export const LEAGUES = [
 ] as const satisfies { id: string; label: string; sport: SportId }[]
 
 export type LeagueId = (typeof LEAGUES)[number]['id']
+export type League = (typeof LEAGUES)[number]
 
 export function isSportId(value: string): value is SportId {
   return SPORTS.some((s) => s.id === value)
