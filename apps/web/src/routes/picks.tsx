@@ -88,7 +88,7 @@ function MyPicksPage() {
       {isPending ? <p className="text-sm text-muted-foreground">Loading picks…</p> : null}
       {isError ? <p className="text-sm text-destructive">Couldn't load picks. Try refreshing.</p> : null}
       {!isPending && !isError && picks.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No picks yet — head to a league to make your first one.</p>
+        <p className="text-sm text-muted-foreground">No picks yet — head to a league and pick your first game.</p>
       ) : null}
 
       {picks.length > 0 ? (

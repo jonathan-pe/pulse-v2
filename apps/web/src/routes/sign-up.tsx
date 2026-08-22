@@ -72,7 +72,7 @@ function SignUpPage() {
         <CardHeader>
           <CardTitle>{step === 'form' ? 'Create an account' : 'Verify your email'}</CardTitle>
           {step === 'form' ? (
-            <CardDescription>Start tracking your prediction performance.</CardDescription>
+            <CardDescription>Free picks, real odds, and a score that shows exactly how sharp your reads are.</CardDescription>
           ) : null}
         </CardHeader>
         <CardContent>

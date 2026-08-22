@@ -48,7 +48,7 @@ export function SportView({
             {isPending ? <p className="text-sm text-muted-foreground">Loading markets…</p> : null}
             {isError ? <p className="text-sm text-destructive">Couldn't load markets. Try refreshing.</p> : null}
             {!isPending && !isError && events.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No open games for this league right now.</p>
+              <p className="text-sm text-muted-foreground">No open games right now. Check back closer to game time.</p>
             ) : null}
             {groups.map((group) => (
               <div key={group.label} className="mb-4">
