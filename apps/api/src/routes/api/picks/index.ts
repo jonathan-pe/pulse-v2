@@ -1,6 +1,61 @@
 import { type FastifyPluginAsync } from 'fastify'
+import type { PickOutcomeStatus } from '@pulse/shared'
 import { optionalAuth, requireAuth } from '../../../lib/require-auth.js'
-import { deletePick, listMyPicks, listOpenMarketsWithPicks, upsertPick } from '../../../lib/picks.js'
+import { deletePick, listMyPicks, listOpenMarketsWithPicks, upsertPick, type ListMyPicksParams } from '../../../lib/picks.js'
+
+const STATUSES: PickOutcomeStatus[] = ['upcoming', 'pending', 'won', 'lost']
+const MARKET_TYPES = ['moneyline', 'spreads', 'totals'] as const
+const MAX_LIMIT = 50
+const DEFAULT_LIMIT = 20
+
+interface ListPicksQuery {
+  page?: string
+  limit?: string
+  sort?: string
+  status?: string
+  league?: string
+  marketType?: string
+  from?: string
+  to?: string
+}
+
+function parseListPicksQuery(query: ListPicksQuery): ListMyPicksParams {
+  const page = Math.max(1, Number.parseInt(query.page ?? '1', 10) || 1)
+  // limit=all is for internal call sites that need a full unpaginated record
+  // (e.g. per-league win/loss counts on the home page) — the My Picks table
+  // itself never sends it.
+  const limit =
+    query.limit === 'all'
+      ? Number.POSITIVE_INFINITY
+      : Math.min(MAX_LIMIT, Math.max(1, Number.parseInt(query.limit ?? String(DEFAULT_LIMIT), 10) || DEFAULT_LIMIT))
+
+  const [sortByRaw, sortDirRaw] = (query.sort ?? 'date:desc').split(':')
+  const sortBy = sortByRaw === 'points' || sortByRaw === 'odds' ? sortByRaw : 'date'
+  const sortDir = sortDirRaw === 'asc' ? 'asc' : 'desc'
+
+  const status = query.status
+    ?.split(',')
+    .filter((value): value is PickOutcomeStatus => STATUSES.includes(value as PickOutcomeStatus))
+  const marketType = query.marketType
+    ?.split(',')
+    .filter((value): value is (typeof MARKET_TYPES)[number] => MARKET_TYPES.includes(value as (typeof MARKET_TYPES)[number]))
+  const league = query.league?.split(',').filter(Boolean)
+
+  const from = query.from ? new Date(query.from) : undefined
+  const to = query.to ? new Date(query.to) : undefined
+
+  return {
+    page,
+    limit,
+    sortBy,
+    sortDir,
+    status: status?.length ? status : undefined,
+    league: league?.length ? league : undefined,
+    marketType: marketType?.length ? marketType : undefined,
+    from: from && !Number.isNaN(from.getTime()) ? from : undefined,
+    to: to && !Number.isNaN(to.getTime()) ? to : undefined,
+  }
+}
 
 const picksRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
   fastify.get<{ Querystring: { league?: string } }>('/markets', { preHandler: optionalAuth }, async (request, reply) => {
@@ -8,9 +63,10 @@ const picksRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
     return reply.send({ events })
   })
 
-  fastify.get('/picks', { preHandler: requireAuth }, async (request, reply) => {
-    const picks = await listMyPicks(request.user!.id)
-    return reply.send({ picks })
+  fastify.get<{ Querystring: ListPicksQuery }>('/picks', { preHandler: requireAuth }, async (request, reply) => {
+    const params = parseListPicksQuery(request.query)
+    const { picks, total, stats } = await listMyPicks(request.user!.id, params)
+    return reply.send({ picks, total, page: params.page, limit: params.limit, stats })
   })
 
   fastify.post<{ Body: { marketId?: string; outcomeIndex?: number } }>(

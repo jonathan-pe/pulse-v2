@@ -1,5 +1,5 @@
 import { useAuth } from "@/hooks/useAuth"
-import { useMarkets, useMyPicks } from "@/hooks/usePicks"
+import { useAllMyPicks, useMarkets } from "@/hooks/usePicks"
 import { LEAGUES, SPORTS, type League, type Sport } from "@/lib/sports"
 
 export interface LeagueDirectoryEntry {
@@ -20,7 +20,7 @@ export interface SportGroup {
 export function useLeagueDirectory(): SportGroup[] {
   const { user } = useAuth()
   const { data: marketsData } = useMarkets()
-  const { data: picksData } = useMyPicks({ enabled: !!user })
+  const { data: picksData } = useAllMyPicks({ enabled: !!user })
 
   const events = marketsData?.events ?? []
   const picks = picksData?.picks ?? []

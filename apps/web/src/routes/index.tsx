@@ -6,7 +6,7 @@ import { EventRow } from '@/components/picks/event-row'
 import { PickSlip } from '@/components/picks/pick-slip'
 import { StagingProvider } from '@/hooks/usePicksStaging'
 import { useAuth } from '@/hooks/useAuth'
-import { useMarkets, useMyPicks } from '@/hooks/usePicks'
+import { useAllMyPicks, useMarkets } from '@/hooks/usePicks'
 import { useLeagueDirectory, type LeagueDirectoryEntry, type SportGroup } from '@/hooks/useLeagueDirectory'
 import { cn } from '@/lib/utils'
 import { compactVolume } from '@/lib/format'
@@ -40,7 +40,7 @@ function spotlightLeagues(sportGroups: SportGroup[]): LeagueDirectoryEntry[] {
 function HomeComponent() {
   const { user, isPending: isAuthPending } = useAuth()
   const { data: marketsData, isPending: isMarketsPending, isError: isMarketsError } = useMarkets()
-  const { data: picksData } = useMyPicks({ enabled: !!user })
+  const { data: picksData } = useAllMyPicks({ enabled: !!user })
   const sportGroups = useLeagueDirectory()
 
   const events = marketsData?.events ?? []

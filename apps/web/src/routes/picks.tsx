@@ -1,10 +1,13 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { cn } from '@/lib/utils'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Inbox, SearchX } from 'lucide-react'
 import { useMyPicks } from '@/hooks/usePicks'
 import { authClient } from '@/lib/auth-client'
-import { formatPoints, summarizePicks } from '@/lib/picks-summary'
-import type { PickOutcomeStatus, PickResult } from '@/lib/api'
+import { PicksStatsRow } from '@/components/picks/picks-stats'
+import { PicksFilterBar } from '@/components/picks/picks-filter-bar'
+import { PicksTable } from '@/components/picks/picks-table'
+import { PicksPagination } from '@/components/picks/picks-pagination'
+import { Skeleton } from '@/components/ui/skeleton'
+import { validateMyPicksSearch, type MyPicksSearch, type SortField } from '@/lib/picks-search'
 
 export const Route = createFileRoute('/picks')({
   beforeLoad: async () => {
@@ -13,149 +16,88 @@ export const Route = createFileRoute('/picks')({
       throw redirect({ to: '/sign-in' })
     }
   },
+  validateSearch: validateMyPicksSearch,
   component: MyPicksPage,
 })
 
-const MARKET_LABEL = {
-  moneyline: 'Moneyline',
-  spreads: 'Spread',
-  totals: 'Total',
-} as const
-
-const STATUS_LABEL: Record<PickOutcomeStatus, string> = {
-  upcoming: 'Upcoming',
-  pending: 'Pending',
-  won: 'Won',
-  lost: 'Lost',
-}
-
-const STATUS_CLASS: Record<PickOutcomeStatus, string> = {
-  upcoming: 'bg-muted text-muted-foreground',
-  pending: 'bg-muted text-muted-foreground',
-  won: 'bg-primary/10 text-primary',
-  lost: 'bg-destructive/10 text-destructive',
-}
-
-function pickDescription(result: PickResult): string {
-  const { market, pick } = result
-  const outcomeName = pick.outcomeIndex === 0 ? market.outcomeAName : market.outcomeBName
-  if (market.marketType === 'totals') {
-    return `${outcomeName} ${market.line ?? ''}`.trim()
-  }
-  if (market.marketType === 'spreads' && market.line !== null) {
-    return `${outcomeName} ${market.line}`.trim()
-  }
-  return outcomeName
-}
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-}
-
-// Final score, not the market outcome — how close the pick actually was.
-// Totals picks care about the combined score, not either team's individually;
-// spread/moneyline picks care about the score in the same team order the
-// event title already uses ("X vs. Y"), so just the numbers read naturally
-// on their own.
-function formatFinalScore(result: PickResult): string | null {
-  const { teamAScore, teamBScore } = result.event
-  if (teamAScore === null || teamBScore === null) return null
-  if (result.market.marketType === 'totals') {
-    return String(teamAScore + teamBScore)
-  }
-  return `${teamAScore}–${teamBScore}`
-}
-
 function MyPicksPage() {
-  const { data, isPending, isError } = useMyPicks()
+  const search = Route.useSearch()
+  const navigate = Route.useNavigate()
+  const { data, isPending, isError } = useMyPicks(search)
   const picks = data?.picks ?? []
 
-  const { totalPoints, won, lost } = summarizePicks(picks)
+  function patchSearch(patch: Partial<MyPicksSearch>) {
+    navigate({ search: (prev) => ({ ...prev, ...patch }) })
+  }
+
+  function handleSort(field: SortField) {
+    patchSearch({
+      sortBy: field,
+      sortDir: search.sortBy === field && search.sortDir === 'desc' ? 'asc' : 'desc',
+      page: 1,
+    })
+  }
+
+  const hasAnyPicksAtAll = !isPending && data && data.total === 0 && !search.league && !search.marketType && !search.status && !search.from && !search.to
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-10">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-medium">My Picks</h1>
-        {picks.length > 0 ? (
-          <span className="font-mono text-sm tabular-nums text-muted-foreground">
-            {won}–{lost}
-            {' · '}
-            <span className={totalPoints >= 0 ? 'text-primary' : 'text-destructive'}>{formatPoints(totalPoints)} pts</span>
-          </span>
-        ) : null}
+      <div className="mb-6">
+        <h1 className="font-heading text-2xl font-semibold">My Picks</h1>
+        <p className="mt-0.5 text-sm text-muted-foreground">Your full record across every market you've picked.</p>
       </div>
 
-      {isPending ? <p className="text-sm text-muted-foreground">Loading picks…</p> : null}
-      {isError ? <p className="text-sm text-destructive">Couldn't load picks. Try refreshing.</p> : null}
-      {!isPending && !isError && picks.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No picks yet — head to a league and pick your first game.</p>
-      ) : null}
+      {isPending ? <PicksLoadingSkeleton /> : null}
 
-      {picks.length > 0 ? (
-        <div className="overflow-hidden rounded-xl bg-card">
-          <Table>
-            <colgroup>
-              <col />
-              <col style={{ width: 160 }} />
-              <col style={{ width: 80 }} />
-              <col style={{ width: 100 }} />
-              <col style={{ width: 90 }} />
-            </colgroup>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="h-auto py-2.5 pl-4 text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
-                  Event
-                </TableHead>
-                <TableHead className="h-auto py-2.5 text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
-                  Your pick
-                </TableHead>
-                <TableHead className="h-auto py-2.5 text-left text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
-                  Score
-                </TableHead>
-                <TableHead className="h-auto py-2.5 text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
-                  Result
-                </TableHead>
-                <TableHead className="h-auto py-2.5 pr-4 text-right text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
-                  Points
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {picks.map((result) => {
-                const finalScore = formatFinalScore(result)
-                return (
-                <TableRow key={result.pick.id}>
-                  <TableCell className="py-3 pl-4 text-left whitespace-normal">
-                    <div className="truncate font-semibold">{result.event.title}</div>
-                    <div className="text-xs text-muted-foreground">{formatDate(result.event.startTime)}</div>
-                  </TableCell>
-                  <TableCell className="py-3 text-left whitespace-normal">
-                    <div>{pickDescription(result)}</div>
-                    <div className="text-xs text-muted-foreground">{MARKET_LABEL[result.market.marketType]}</div>
-                  </TableCell>
-                  <TableCell className="py-3 text-left font-mono text-sm tabular-nums text-muted-foreground">
-                    {finalScore ?? '—'}
-                  </TableCell>
-                  <TableCell className="py-3 text-left">
-                    <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide', STATUS_CLASS[result.status])}>
-                      {STATUS_LABEL[result.status]}
-                    </span>
-                  </TableCell>
-                  <TableCell
-                    className={cn(
-                      'py-3 pr-4 text-right font-mono tabular-nums',
-                      result.points === null ? 'text-muted-foreground' : result.points >= 0 ? 'text-primary' : 'text-destructive',
-                    )}
-                  >
-                    {result.points === null ? '—' : formatPoints(result.points)}
-                  </TableCell>
-                </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
+      {isError ? (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          Couldn't load picks. Try refreshing.
         </div>
       ) : null}
+
+      {hasAnyPicksAtAll ? (
+        <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border py-16 text-center">
+          <Inbox className="size-6 text-muted-foreground" strokeWidth={1.5} />
+          <p className="text-sm text-muted-foreground">No picks yet — head to a league and pick your first game.</p>
+        </div>
+      ) : null}
+
+      {data && !hasAnyPicksAtAll ? (
+        <>
+          <PicksStatsRow stats={data.stats} />
+          <PicksFilterBar search={search} onChange={patchSearch} />
+
+          {data.total === 0 ? (
+            <div className="flex flex-col items-center gap-2 rounded-xl border border-border bg-card py-16 text-center">
+              <SearchX className="size-6 text-muted-foreground" strokeWidth={1.5} />
+              <p className="text-sm text-muted-foreground">No picks match these filters.</p>
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-xl border border-border bg-card">
+              <PicksTable picks={picks} search={search} onSort={handleSort} />
+              <PicksPagination page={data.page} limit={data.limit} total={data.total} onPageChange={(page) => patchSearch({ page })} />
+            </div>
+          )}
+        </>
+      ) : null}
+    </div>
+  )
+}
+
+function PicksLoadingSkeleton() {
+  return (
+    <div>
+      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-[74px] rounded-xl" />
+        ))}
+      </div>
+      <Skeleton className="mb-4 h-11 rounded-xl" />
+      <div className="overflow-hidden rounded-xl border border-border">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} className="h-14 rounded-none border-b border-border last:border-b-0" />
+        ))}
+      </div>
     </div>
   )
 }

@@ -40,6 +40,25 @@ export interface PickResult {
   points: number | null
 }
 
+export interface PicksStats {
+  won: number
+  lost: number
+  pending: number
+  upcoming: number
+  totalPoints: number
+  winRate: number | null
+  brierScore: number | null
+  streak: { type: 'won' | 'lost' | null; count: number }
+}
+
+export interface ListMyPicksResponse {
+  picks: PickResult[]
+  total: number
+  page: number
+  limit: number
+  stats: PicksStats
+}
+
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`/api${path}`, {
     ...init,
