@@ -21,7 +21,7 @@ const OTP_SUBJECT: Record<'sign-in' | 'email-verification' | 'forget-password' |
   'change-email': 'Confirm your new Pulse email',
 }
 
-// Public, browser-facing origin (app.playpulse.co in prod) — same-origin via
+// Public, browser-facing origin (playpulse.co in prod) — same-origin via
 // the apps/web rewrite, see ADR: Hosting & DevOps. NOT api.playpulse.co —
 // better-auth's generated links/callbacks should point where users actually
 // are.

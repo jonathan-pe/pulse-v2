@@ -28,7 +28,7 @@ export default defineConfig({
     // silently-shifted port would break better-auth's origin check.
     port: 5173,
     strictPort: true,
-    // Mirrors apps/web/vercel.json's production rewrite (app.playpulse.co ->
+    // Mirrors apps/web/vercel.json's production rewrite (playpulse.co ->
     // api.playpulse.co) so the browser sees a single same-origin server in
     // both environments — no CORS/cross-site cookie config needed.
     proxy: {
