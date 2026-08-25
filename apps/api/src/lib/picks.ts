@@ -1,6 +1,6 @@
-import { and, desc, eq, gte, inArray, lte, ne, sql } from 'drizzle-orm'
+import { and, desc, eq, gte, inArray, isNull, lte, ne, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
-import { brierScore, scorePick, type PickOutcomeStatus } from '@pulse/shared'
+import { brierScore, calculatePoints, scorePick, type PickOutcomeStatus } from '@pulse/shared'
 import { getDb } from '../db/index.js'
 import { event, market, pick, team } from '../db/schema.js'
 
@@ -135,6 +135,28 @@ export async function deletePick(userId: string, marketId: string): Promise<Pick
   return { ok: true }
 }
 
+// Called once a market's status flips to 'resolved' (from ingestion). Only
+// touches rows still unsettled, so it's safe to call redundantly — a market
+// re-observed as already-resolved on a later sync just finds nothing to do.
+// Loops per-row rather than a single SQL UPDATE...CASE so the scoring math
+// lives in exactly one place (@pulse/shared), not duplicated in SQL.
+export async function settlePicksForMarket(marketId: string, resolvedOutcomeIndex: number): Promise<void> {
+  const db = getDb()
+  const unsettled = await db
+    .select({ id: pick.id, outcomeIndex: pick.outcomeIndex, priceAtPick: pick.priceAtPick })
+    .from(pick)
+    .where(and(eq(pick.marketId, marketId), isNull(pick.settledStatus)))
+
+  for (const row of unsettled) {
+    const isCorrect = row.outcomeIndex === resolvedOutcomeIndex
+    const points = calculatePoints(Number(row.priceAtPick), isCorrect)
+    await db
+      .update(pick)
+      .set({ settledStatus: isCorrect ? 'won' : 'lost', points: String(points), settledAt: new Date() })
+      .where(eq(pick.id, row.id))
+  }
+}
+
 export interface PickResult {
   pick: { id: string; outcomeIndex: number; priceAtPick: string; createdAt: Date }
   market: {
@@ -235,12 +257,13 @@ function computeStats(results: PickResult[]): PicksStats {
 }
 
 // Unlike listOpenMarketsWithPicks, this is the "review what happened" view —
-// it includes every pick regardless of lock/resolution state, scored on read
-// from data ingestion already writes (market.resolvedOutcomeIndex), rather
-// than a separately persisted result. status/points aren't stored columns,
-// so only league/marketType/date can be pushed into the SQL WHERE clause;
-// status filtering, points/status sorting, and all stats are derived in JS
-// over the full filtered set before slicing out the requested page.
+// it includes every pick regardless of lock/resolution state. Settled picks
+// read their cached settledStatus/points (written once by
+// settlePicksForMarket); upcoming/pending are still scored live since they
+// were never persisted (see settledStatus's column comment on `pick`). Only
+// league/marketType/date can be pushed into the SQL WHERE clause; status
+// filtering, points/status sorting, and all stats are derived in JS over the
+// full filtered set before slicing out the requested page.
 export async function listMyPicks(userId: string, params: ListMyPicksParams): Promise<ListMyPicksResult> {
   const db = getDb()
   const rows = await db
@@ -265,13 +288,18 @@ export async function listMyPicks(userId: string, params: ListMyPicksParams): Pr
     pick: row.pick,
     market: row.market,
     event: { ...row.event, teamAName: row.teamAName, teamBName: row.teamBName },
-    ...scorePick({
-      outcomeIndex: row.pick.outcomeIndex,
-      priceAtPick: Number(row.pick.priceAtPick),
-      marketStatus: row.market.status,
-      resolvedOutcomeIndex: row.market.resolvedOutcomeIndex,
-      eventStartTime: row.event.startTime,
-    }),
+    // Settled picks use the cached columns settlePicksForMarket() wrote;
+    // upcoming/pending (settledStatus still null) are derived live since
+    // they can flip every ingestion cycle and were never persisted.
+    ...(row.pick.settledStatus !== null
+      ? { status: row.pick.settledStatus, points: Number(row.pick.points) }
+      : scorePick({
+          outcomeIndex: row.pick.outcomeIndex,
+          priceAtPick: Number(row.pick.priceAtPick),
+          marketStatus: row.market.status,
+          resolvedOutcomeIndex: row.market.resolvedOutcomeIndex,
+          eventStartTime: row.event.startTime,
+        })),
   }))
 
   // Stats reflect league/marketType/date filters but not the status filter —

@@ -1,6 +1,7 @@
 import { ne, eq, and, gte, lte, isNull } from 'drizzle-orm'
 import { getDb } from '../../db/index.js'
 import { league, team, event, market } from '../../db/schema.js'
+import { settlePicksForMarket } from '../picks.js'
 import {
   fetchGammaEvents,
   fetchGammaEventsByIds,
@@ -129,7 +130,7 @@ async function upsertMarketRow(eventId: string, raw: GammaMarket) {
   const status = deriveMarketStatus(raw)
   const resolvedOutcomeIndex = status === 'resolved' ? (prices[0] > prices[1] ? 0 : 1) : null
 
-  await db
+  const [marketRow] = await db
     .insert(market)
     .values({
       externalId: raw.id,
@@ -157,6 +158,14 @@ async function upsertMarketRow(eventId: string, raw: GammaMarket) {
         lastSyncedAt: new Date(),
       },
     })
+    .returning({ id: market.id })
+
+  // Covers a market that arrives already-resolved on its very first sync
+  // (e.g. discovery running late). The far more common case — a tracked
+  // market flipping to resolved — is handled in recheckUnresolvedMarkets.
+  if (status === 'resolved' && resolvedOutcomeIndex !== null) {
+    await settlePicksForMarket(marketRow.id, resolvedOutcomeIndex)
+  }
 }
 
 async function discoverLeague(leagueRow: { id: string; polymarketTagSlug: string }) {
@@ -217,6 +226,10 @@ async function recheckUnresolvedMarkets(leagueId: string) {
           lastSyncedAt: new Date(),
         })
         .where(eq(market.id, trackedRow.id))
+
+      if (status === 'resolved' && resolvedOutcomeIndex !== null) {
+        await settlePicksForMarket(trackedRow.id, resolvedOutcomeIndex)
+      }
     }
   }
 }

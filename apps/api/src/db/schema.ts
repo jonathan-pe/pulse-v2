@@ -214,6 +214,15 @@ export const pick = pgTable(
       .references(() => market.id, { onDelete: "cascade" }),
     outcomeIndex: integer("outcome_index").notNull(), // 0 | 1 — matches market.outcomeA/BName
     priceAtPick: numeric("price_at_pick").notNull(), // snapshot at submit/edit time — market's own price gets overwritten on every ingestion sync
+    // Null until settlePicksForMarket() writes it once, when ingestion resolves
+    // this pick's market. upcoming/pending have no persisted status — those
+    // can flip every ingestion cycle and are cheap to derive live via
+    // scorePick(), so only the two states that are ever true forever get
+    // cached here. Rescoring later is re-running calculatePoints() against
+    // priceAtPick + outcomeIndex + this column, nothing else needed.
+    settledStatus: text("settled_status", { enum: ["won", "lost"] }),
+    points: numeric("points"),
+    settledAt: timestamp("settled_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
