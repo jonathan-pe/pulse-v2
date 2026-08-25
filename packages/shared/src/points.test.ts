@@ -2,12 +2,15 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { calculateWinPoints, calculateLossPoints, calculatePoints } from './points.js'
 
-// Worked examples from ADR: Scoring — Points Formula & Calibration
+// Loss mirrors win exactly at the default lossMultiplier (1.0) — see
+// points.ts's doc comment. Win values are the worked examples from ADR:
+// Scoring — Points Formula & Calibration; loss values were updated to
+// match after the loss formula changed from -k*p to -k/p.
 const cases = [
-  { p: 0.83, win: 12.0, loss: -8.3 },
-  { p: 0.52, win: 19.2, loss: -5.2 },
-  { p: 0.4, win: 25.0, loss: -4.0 },
-  { p: 0.125, win: 80.0, loss: -1.25 },
+  { p: 0.83, win: 12.0, loss: -12.0 },
+  { p: 0.52, win: 19.2, loss: -19.2 },
+  { p: 0.4, win: 25.0, loss: -25.0 },
+  { p: 0.125, win: 80.0, loss: -80.0 },
 ]
 
 for (const { p, win, loss } of cases) {

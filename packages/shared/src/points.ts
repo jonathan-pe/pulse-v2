@@ -2,7 +2,9 @@
  * Points formula — see ADR: Scoring, Points Formula & Calibration.
  *
  * `p` is the Polymarket implied probability (0,1) for the picked outcome,
- * captured at pick time. Win/loss constants match v1's shipped values.
+ * captured at pick time. Loss mirrors win exactly (-k/p vs k/p) so a pick
+ * wins and loses the same magnitude at a given price — a longshot that
+ * hits pays big, and missing it costs just as much.
  */
 
 export const POINTS_K = 10
@@ -23,7 +25,7 @@ export function calculateLossPoints(
   if (p <= 0 || p > 1) {
     throw new RangeError(`p must be in (0, 1], got ${p}`)
   }
-  return -lossMultiplier * k * p
+  return -lossMultiplier * (k / p)
 }
 
 export function calculatePoints(p: number, isCorrect: boolean): number {
