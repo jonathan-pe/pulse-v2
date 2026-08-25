@@ -1,3 +1,13 @@
+import { useMemo } from 'react'
+import {
+  createColumnHelper,
+  createSortedRowModel,
+  rowSortingFeature,
+  tableFeatures,
+  useTable,
+  type Column,
+  type SortingState,
+} from '@tanstack/react-table'
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
@@ -66,36 +76,104 @@ function formatFinalScore(result: PickResult): string | null {
   return `${teamAScore}–${teamBScore}`
 }
 
-function SortHeader({
-  field,
-  label,
-  search,
-  onSort,
-  align = 'left',
-}: {
-  field: SortField
-  label: string
-  search: MyPicksSearch
-  onSort: (field: SortField) => void
-  align?: 'left' | 'right'
-}) {
-  const active = search.sortBy === field
-  const Icon = active ? (search.sortDir === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown
-  return (
-    <button
-      type="button"
-      onClick={() => onSort(field)}
-      className={cn(
-        'inline-flex items-center gap-1 text-[10px] font-bold tracking-wide uppercase transition-colors hover:text-foreground',
-        active ? 'text-foreground' : 'text-muted-foreground',
-        align === 'right' && 'flex-row-reverse',
-      )}
-    >
-      {label}
-      <Icon className={cn('size-3', active ? 'text-primary' : 'text-muted-foreground/60')} />
-    </button>
-  )
+// Only rowSortingFeature is enabled — filtering/pagination stay server-driven
+// (via PicksFilterBar/PicksPagination + the URL), so the table never needs
+// its own row models for those. manualSorting below means this feature only
+// supplies the header click / sort-state bookkeeping, not actual reordering.
+const features = tableFeatures({
+  rowSortingFeature,
+  sortedRowModel: createSortedRowModel(),
+})
+
+const columnHelper = createColumnHelper<typeof features, PickResult>()
+
+function sortableHeader(label: string, align: 'left' | 'right' = 'left') {
+  return ({ column }: { column: Column<typeof features, PickResult, unknown> }) => {
+    const sorted = column.getIsSorted()
+    const Icon = sorted === 'asc' ? ArrowUp : sorted === 'desc' ? ArrowDown : ArrowUpDown
+    return (
+      <button
+        type="button"
+        onClick={() => column.toggleSorting(sorted === 'desc' ? false : true)}
+        className={cn(
+          'inline-flex items-center gap-1 text-[10px] font-bold tracking-wide uppercase transition-colors hover:text-foreground',
+          sorted ? 'text-foreground' : 'text-muted-foreground',
+          align === 'right' && 'flex-row-reverse',
+        )}
+      >
+        {label}
+        <Icon className={cn('size-3', sorted ? 'text-primary' : 'text-muted-foreground/60')} />
+      </button>
+    )
+  }
 }
+
+const columns = [
+  columnHelper.display({
+    id: 'date',
+    enableSorting: true,
+    header: sortableHeader('Event'),
+    cell: ({ row }) => {
+      const result = row.original
+      return (
+        <>
+          <div className="truncate font-semibold">{result.event.title}</div>
+          <div className="text-xs text-muted-foreground">{formatDate(result.event.startTime)}</div>
+        </>
+      )
+    },
+  }),
+  columnHelper.display({
+    id: 'yourPick',
+    enableSorting: false,
+    header: 'Your pick',
+    cell: ({ row }) => {
+      const result = row.original
+      return (
+        <>
+          <div>{pickDescription(result)}</div>
+          <div className="text-xs text-muted-foreground">{MARKET_LABEL[result.market.marketType]}</div>
+        </>
+      )
+    },
+  }),
+  columnHelper.display({
+    id: 'odds',
+    enableSorting: true,
+    header: sortableHeader('Odds'),
+    cell: ({ row }) => formatOdds(row.original.pick.priceAtPick),
+  }),
+  columnHelper.display({
+    id: 'score',
+    enableSorting: false,
+    header: 'Score',
+    cell: ({ row }) => formatFinalScore(row.original) ?? '—',
+  }),
+  columnHelper.display({
+    id: 'result',
+    enableSorting: false,
+    header: 'Result',
+    cell: ({ row }) => {
+      const status = row.original.status
+      return (
+        <Badge className={cn('border-transparent font-bold tracking-wide uppercase', STATUS_CLASS[status])}>
+          {STATUS_LABEL[status]}
+        </Badge>
+      )
+    },
+  }),
+  columnHelper.display({
+    id: 'points',
+    enableSorting: true,
+    header: sortableHeader('Points', 'right'),
+    cell: ({ row }) => {
+      const points = row.original.points
+      return points === null ? '—' : formatPoints(points)
+    },
+  }),
+]
+
+const COLUMN_WIDTHS = [undefined, 160, 70, 80, 100, 90]
 
 export function PicksTable({
   picks,
@@ -106,70 +184,75 @@ export function PicksTable({
   search: MyPicksSearch
   onSort: (field: SortField) => void
 }) {
+  const sorting = useMemo<SortingState>(
+    () => [{ id: search.sortBy ?? 'date', desc: (search.sortDir ?? 'desc') === 'desc' }],
+    [search.sortBy, search.sortDir],
+  )
+
+  const table = useTable({
+    features,
+    data: picks,
+    columns,
+    manualSorting: true,
+    enableSortingRemoval: false,
+    enableMultiSort: false,
+    state: { sorting },
+    onSortingChange: (updater) => {
+      const next = typeof updater === 'function' ? updater(sorting) : updater
+      const nextSort = next[0]
+      if (nextSort) onSort(nextSort.id as SortField)
+    },
+  })
+
   return (
     <Table>
       <colgroup>
-        <col />
-        <col style={{ width: 160 }} />
-        <col style={{ width: 70 }} />
-        <col style={{ width: 80 }} />
-        <col style={{ width: 100 }} />
-        <col style={{ width: 90 }} />
+        {COLUMN_WIDTHS.map((width, i) => (
+          <col key={i} style={width ? { width } : undefined} />
+        ))}
       </colgroup>
       <TableHeader>
-        <TableRow className="hover:bg-transparent">
-          <TableHead className="h-auto py-2.5 pl-4 text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
-            <SortHeader field="date" label="Event" search={search} onSort={onSort} />
-          </TableHead>
-          <TableHead className="h-auto py-2.5 text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
-            Your pick
-          </TableHead>
-          <TableHead className="h-auto py-2.5 text-left text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
-            <SortHeader field="odds" label="Odds" search={search} onSort={onSort} />
-          </TableHead>
-          <TableHead className="h-auto py-2.5 text-left text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
-            Score
-          </TableHead>
-          <TableHead className="h-auto py-2.5 text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
-            Result
-          </TableHead>
-          <TableHead className="h-auto py-2.5 pr-4 text-right text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
-            <SortHeader field="points" label="Points" search={search} onSort={onSort} align="right" />
-          </TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {picks.map((result) => {
-          const finalScore = formatFinalScore(result)
-          return (
-            <TableRow key={result.pick.id}>
-              <TableCell className="py-3 pl-4 text-left whitespace-normal">
-                <div className="truncate font-semibold">{result.event.title}</div>
-                <div className="text-xs text-muted-foreground">{formatDate(result.event.startTime)}</div>
-              </TableCell>
-              <TableCell className="py-3 text-left whitespace-normal">
-                <div>{pickDescription(result)}</div>
-                <div className="text-xs text-muted-foreground">{MARKET_LABEL[result.market.marketType]}</div>
-              </TableCell>
-              <TableCell className="py-3 text-left font-mono text-sm tabular-nums text-muted-foreground">
-                {formatOdds(result.pick.priceAtPick)}
-              </TableCell>
-              <TableCell className="py-3 text-left font-mono text-sm tabular-nums text-muted-foreground">
-                {finalScore ?? '—'}
-              </TableCell>
-              <TableCell className="py-3 text-left">
-                <Badge className={cn('border-transparent font-bold tracking-wide uppercase', STATUS_CLASS[result.status])}>
-                  {STATUS_LABEL[result.status]}
-                </Badge>
-              </TableCell>
-              <TableCell
+        {table.getHeaderGroups().map((headerGroup) => (
+          <TableRow key={headerGroup.id} className="hover:bg-transparent">
+            {headerGroup.headers.map((header, i) => (
+              <TableHead
+                key={header.id}
                 className={cn(
-                  'py-3 pr-4 text-right font-mono tabular-nums',
-                  result.points === null ? 'text-muted-foreground' : result.points >= 0 ? 'text-win' : 'text-loss',
+                  'h-auto py-2.5 text-[10px] font-bold tracking-wide text-muted-foreground uppercase',
+                  i === 0 && 'pl-4',
+                  i === headerGroup.headers.length - 1 && 'pr-4 text-right',
                 )}
               >
-                {result.points === null ? '—' : formatPoints(result.points)}
-              </TableCell>
+                {header.isPlaceholder ? null : <table.FlexRender header={header} />}
+              </TableHead>
+            ))}
+          </TableRow>
+        ))}
+      </TableHeader>
+      <TableBody>
+        {table.getRowModel().rows.map((row) => {
+          const result = row.original
+          const cells = row.getAllCells()
+          return (
+            <TableRow key={row.id}>
+              {cells.map((cell, i) => (
+                <TableCell
+                  key={cell.id}
+                  className={cn(
+                    'py-3 whitespace-normal',
+                    i === 0 && 'pl-4 text-left',
+                    cell.column.id === 'score' && 'text-left font-mono text-sm tabular-nums text-muted-foreground',
+                    cell.column.id === 'odds' && 'text-left font-mono text-sm tabular-nums text-muted-foreground',
+                    cell.column.id === 'points' &&
+                      cn(
+                        'pr-4 text-right font-mono tabular-nums',
+                        result.points === null ? 'text-muted-foreground' : result.points >= 0 ? 'text-win' : 'text-loss',
+                      ),
+                  )}
+                >
+                  <table.FlexRender cell={cell} />
+                </TableCell>
+              ))}
             </TableRow>
           )
         })}
