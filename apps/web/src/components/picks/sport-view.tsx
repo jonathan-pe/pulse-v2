@@ -41,7 +41,7 @@ export function SportView({
     <StagingProvider>
       <div className="mx-auto w-full max-w-[90rem] px-4 py-10">
         <h1 className="mb-6 text-2xl font-medium">{title}</h1>
-        <div className="grid grid-cols-[176px_minmax(0,1fr)_296px] items-start gap-5 max-lg:grid-cols-1">
+        <div className="grid grid-cols-[176px_minmax(0,1fr)_380px] items-start gap-5 max-lg:grid-cols-1">
           <LeagueRail events={allEvents} selectedLeague={selectedLeague} />
 
           <div>

@@ -140,7 +140,7 @@ function HomeComponent() {
       ) : null}
       {events.length > 0 ? (
         <StagingProvider>
-          <div className="mb-12 grid grid-cols-[minmax(0,1fr)_296px] items-start gap-5 max-lg:grid-cols-1">
+          <div className="mb-12 grid grid-cols-[minmax(0,1fr)_380px] items-start gap-5 max-lg:grid-cols-1">
             <div>
               <MarketColumnHeaders label="Popular" />
               {popularEvents(events).map((e) => (
