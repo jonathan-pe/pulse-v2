@@ -87,7 +87,7 @@ export function PickSlip() {
           Picks
         </span>
         <span className="font-mono text-xs tabular-nums text-muted-foreground">
-          {entries.length > 0 ? `${entries.length} staged` : null}
+          {entries.length > 0 ? entries.length : null}
         </span>
       </div>
 
