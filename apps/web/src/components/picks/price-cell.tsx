@@ -11,6 +11,7 @@ import type { MarketWithPick } from "@/lib/api"
 export function PriceCell({
   market,
   outcomeIndex,
+  eventId,
   eventTitle,
   topLabel,
   outcomeLabel,
@@ -20,6 +21,8 @@ export function PriceCell({
 }: {
   market: MarketWithPick
   outcomeIndex: 0 | 1
+  // Groups this pick with any others from the same event in the pick slip.
+  eventId: string
   eventTitle: string
   // Short line/total text shown on the button itself, e.g. "-1.5" or "Over 8.5".
   topLabel?: string
@@ -73,6 +76,7 @@ export function PriceCell({
         stage({
           marketId: market.id,
           outcomeIndex,
+          eventId,
           eventTitle,
           marketType: market.marketType,
           line: market.line,

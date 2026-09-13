@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router"
-import { ArrowDown, ArrowUp, Ticket, X } from "lucide-react"
+import { ArrowDown, ArrowUp, Ticket, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/hooks/useAuth"
@@ -74,10 +74,32 @@ function entryPercentColor(entry: StagedPick): string {
   return "var(--color-primary)"
 }
 
+// Picks from the same game land in one group, in the order their event was
+// first staged — a group is never re-sorted as more picks join it, so it
+// doesn't jump around the list while you're still building it out.
+function groupByEvent(entries: StagedPick[]): { eventId: string; eventTitle: string; picks: StagedPick[] }[] {
+  const order: string[] = []
+  const picksByEvent = new Map<string, StagedPick[]>()
+  for (const entry of entries) {
+    const list = picksByEvent.get(entry.eventId)
+    if (list) {
+      list.push(entry)
+    } else {
+      picksByEvent.set(entry.eventId, [entry])
+      order.push(entry.eventId)
+    }
+  }
+  return order.map((eventId) => {
+    const picks = picksByEvent.get(eventId)!
+    return { eventId, eventTitle: picks[0]!.eventTitle, picks }
+  })
+}
+
 export function PickSlip() {
   const { user } = useAuth()
   const { staged, errors, isConfirming, unstage, clearStaged, confirmAll } = useStaging()
   const entries = [...staged.values()]
+  const groups = groupByEvent(entries)
 
   return (
     <div className="sticky top-24 overflow-hidden rounded-2xl bg-card shadow-sm">
@@ -99,54 +121,52 @@ export function PickSlip() {
         </p>
       ) : (
         <div className="flex flex-col">
-          {entries.map((entry, i) => {
-            const error = errors.get(entry.marketId)
-            return (
-              <div
-                key={entry.marketId}
-                className={cn(
-                  "relative border-b border-dashed border-border px-4 py-3 last:border-b-0",
-                  error && "bg-destructive/5",
-                )}
-              >
-                {i > 0 ? (
-                  <>
-                    <Notch side="left" />
-                    <Notch side="right" />
-                  </>
-                ) : null}
-                <div className="min-w-0 flex-1">
-                  <div className="mb-1.5 truncate pr-5 text-[11.5px] text-muted-foreground">{entry.eventTitle}</div>
-                  <div className="flex items-center justify-between gap-2 pr-5">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <EntryBadge entry={entry} />
-                      <div className="min-w-0">
-                        <div className="truncate text-[13.5px] leading-tight font-semibold">{entry.outcomeName}</div>
-                        <div className="text-[11.5px] leading-tight text-muted-foreground">{MARKET_LABEL[entry.marketType]}</div>
+          {groups.map((group, gi) => (
+            <div key={group.eventId} className="relative border-b border-dashed border-border px-4 py-3 last:border-b-0">
+              {gi > 0 ? (
+                <>
+                  <Notch side="left" />
+                  <Notch side="right" />
+                </>
+              ) : null}
+              <div className="mb-2 truncate text-[11.5px] text-muted-foreground">{group.eventTitle}</div>
+              <div className="flex flex-col gap-2.5">
+                {group.picks.map((entry) => {
+                  const error = errors.get(entry.marketId)
+                  return (
+                    <div key={entry.marketId}>
+                      <div className="relative flex items-center justify-between gap-2 pr-9">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <EntryBadge entry={entry} />
+                          <div className="min-w-0">
+                            <div className="truncate text-[13.5px] leading-tight font-semibold">{entry.outcomeName}</div>
+                            <div className="text-[11.5px] leading-tight text-muted-foreground">{MARKET_LABEL[entry.marketType]}</div>
+                          </div>
+                        </div>
+                        <span
+                          className="shrink-0 font-mono text-base font-bold tabular-nums"
+                          style={{ color: entryPercentColor(entry) }}
+                        >
+                          {(Number(entry.price) * 100).toFixed(1)}%
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() => unstage(entry.marketId)}
+                          aria-label="Remove from picks"
+                          className="absolute top-1/2 right-0 size-6 -translate-y-1/2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </Button>
                       </div>
+                      {error ? <div className="mt-1 text-[11px] text-destructive">{error}</div> : null}
                     </div>
-                    <span
-                      className="shrink-0 font-mono text-base font-bold tabular-nums"
-                      style={{ color: entryPercentColor(entry) }}
-                    >
-                      {(Number(entry.price) * 100).toFixed(1)}%
-                    </span>
-                  </div>
-                  {error ? <div className="mt-1 text-[11px] text-destructive">{error}</div> : null}
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-xs"
-                  onClick={() => unstage(entry.marketId)}
-                  aria-label="Remove from picks"
-                  className="absolute top-2.5 right-3 size-[18px] text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                >
-                  <X className="size-3" />
-                </Button>
+                  )
+                })}
               </div>
-            )
-          })}
+            </div>
+          ))}
         </div>
       )}
 

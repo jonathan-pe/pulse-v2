@@ -9,6 +9,8 @@ import { marketsQueryKey } from '@/hooks/usePicks'
 export interface StagedPick {
   marketId: string
   outcomeIndex: 0 | 1
+  // Groups this pick with any others staged from the same event.
+  eventId: string
   eventTitle: string
   marketType: 'moneyline' | 'spreads' | 'totals'
   line: string | null
