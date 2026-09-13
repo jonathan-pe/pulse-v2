@@ -1,5 +1,4 @@
 import { Card } from "@/components/ui/card"
-import { cn } from "@/lib/utils"
 import { timeAgo } from "@/lib/format"
 import type { EventWithMarkets, MarketWithPick, TeamSummary } from "@/lib/api"
 import { EmptyCell, PriceCell } from "./price-cell"
@@ -48,7 +47,6 @@ function findOutcomeIndex(market: MarketWithPick | undefined, name: string): 0 |
 
 function TeamRow({
   team,
-  isFirst,
   moneyline,
   mlIndex,
   spread,
@@ -63,7 +61,6 @@ function TeamRow({
   teamName,
 }: {
   team: TeamSummary
-  isFirst: boolean
   moneyline: MarketWithPick | undefined
   mlIndex: 0 | 1 | undefined
   spread: MarketWithPick | undefined
@@ -78,7 +75,7 @@ function TeamRow({
   teamName: string
 }) {
   return (
-    <div className={cn("flex items-center gap-3 px-3 py-2.5", !isFirst && "border-t border-dashed border-border/60")}>
+    <div className="flex items-center gap-3 px-3 py-2.5">
       <TeamBadge team={team} />
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-semibold">{team.name}</div>
@@ -171,13 +168,13 @@ export function EventRow({ data }: { data: EventWithMarkets }) {
   return (
     <Card className="mb-2.5 gap-0 overflow-hidden py-0">
       {data.event.isLive ? (
-        <div className="flex items-center gap-1.5 border-b border-border/60 bg-ember/5 px-3 py-1.5 text-[11px] font-bold tracking-wide text-ember uppercase">
+        <div className="flex items-center gap-1.5 bg-ember/5 px-3 py-1.5 text-[11px] font-bold tracking-wide text-ember uppercase">
           <span className="size-1.5 shrink-0 rounded-full bg-ember motion-safe:animate-[pulse-dot_1.4s_ease-in-out_infinite]" />
           Live
           <span className="font-mono font-normal normal-case text-ember/70">· updated {timeAgo(data.event.lastSyncedAt)}</span>
         </div>
       ) : (
-        <div className="border-b border-border/60 px-3 py-1.5 text-[11px] font-normal text-muted-foreground">
+        <div className="px-3 py-1.5 text-[11px] font-normal text-muted-foreground">
           {formatTime(data.event.startTime)}
         </div>
       )}
@@ -195,7 +192,6 @@ export function EventRow({ data }: { data: EventWithMarkets }) {
           <TeamRow
             key={rowIndex}
             team={teams[rowIndex]}
-            isFirst={rowIndex === 0}
             moneyline={moneyline}
             mlIndex={mlIndex}
             spread={spread}
