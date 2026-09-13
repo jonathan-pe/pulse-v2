@@ -57,6 +57,7 @@ function TeamRow({
   total,
   totalIndex,
   totalTopLabel,
+  totalTone,
   eventTitle,
   teamName,
 }: {
@@ -70,6 +71,7 @@ function TeamRow({
   total: MarketWithPick | undefined
   totalIndex: 0 | 1 | undefined
   totalTopLabel: string
+  totalTone: "win" | "destructive"
   eventTitle: string
   teamName: string
 }) {
@@ -83,7 +85,7 @@ function TeamRow({
       <div className="grid shrink-0 grid-cols-3 gap-1.5">
         <div className="w-[88px]">
           {moneyline && mlIndex !== undefined ? (
-            <PriceCell market={moneyline} outcomeIndex={mlIndex} eventTitle={eventTitle} />
+            <PriceCell market={moneyline} outcomeIndex={mlIndex} eventTitle={eventTitle} accentColor={team.color} />
           ) : (
             <EmptyCell />
           )}
@@ -96,6 +98,7 @@ function TeamRow({
               eventTitle={eventTitle}
               topLabel={spreadTopLabel}
               outcomeLabel={`${teamName} ${spreadTopLabel}`.trim()}
+              accentColor={team.color}
             />
           ) : (
             <EmptyCell />
@@ -109,6 +112,7 @@ function TeamRow({
               eventTitle={eventTitle}
               topLabel={totalTopLabel}
               outcomeLabel={totalTopLabel}
+              tone={totalTone}
             />
           ) : (
             <EmptyCell />
@@ -188,6 +192,7 @@ export function EventRow({ data }: { data: EventWithMarkets }) {
             total={total}
             totalIndex={totalIndex}
             totalTopLabel={totalTopLabel}
+            totalTone={totalLabel === "Over" ? "win" : "destructive"}
             eventTitle={data.event.title}
             teamName={teamName}
           />
