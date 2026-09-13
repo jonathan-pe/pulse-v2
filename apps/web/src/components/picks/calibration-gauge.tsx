@@ -37,13 +37,13 @@ export function CalibrationGauge({
           strokeDashoffset={offset}
           transform="rotate(-90 36 36)"
         />
-        <text x="36" y="36" textAnchor="middle" dominantBaseline="central" className="fill-foreground font-mono text-[15px] font-bold">
+        <text x="36" y="36" textAnchor="middle" dominantBaseline="central" className="fill-foreground font-mono text-base font-bold">
           {brierScore.toFixed(2)}
         </text>
       </svg>
       <div>
         <div className="text-sm font-semibold">{calibrationLabel(brierScore)}</div>
-        <div className="text-[11.5px] text-muted-foreground">{caption}</div>
+        <div className="text-xs text-muted-foreground">{caption}</div>
       </div>
     </div>
   )

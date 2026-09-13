@@ -48,7 +48,7 @@ export function PicksFilterBar({
     <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-border bg-muted/40 p-2">
       <div className="flex items-center gap-1.5 pr-1 pl-1.5 text-muted-foreground">
         <ListFilter className="size-3.5" strokeWidth={2.25} />
-        <span className="font-mono text-[10px] font-bold tracking-wide uppercase">Filter</span>
+        <span className="font-mono text-xs font-bold tracking-wide uppercase">Filter</span>
       </div>
 
       <Select
@@ -112,7 +112,7 @@ export function PicksFilterBar({
           type="date"
           value={search.from ?? ''}
           onChange={(e) => onChange({ from: e.target.value || undefined, page: 1 })}
-          className="h-6 w-[118px] border-none bg-transparent p-0 text-xs shadow-none focus-visible:ring-0"
+          className="h-6 w-30 border-none bg-transparent p-0 text-xs shadow-none focus-visible:ring-0"
           aria-label="From date"
         />
         <span className="text-xs text-muted-foreground">–</span>
@@ -120,7 +120,7 @@ export function PicksFilterBar({
           type="date"
           value={search.to ?? ''}
           onChange={(e) => onChange({ to: e.target.value || undefined, page: 1 })}
-          className="h-6 w-[118px] border-none bg-transparent p-0 text-xs shadow-none focus-visible:ring-0"
+          className="h-6 w-30 border-none bg-transparent p-0 text-xs shadow-none focus-visible:ring-0"
           aria-label="To date"
         />
       </div>

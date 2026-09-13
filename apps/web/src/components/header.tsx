@@ -54,7 +54,7 @@ function SportsNav() {
         {sportGroups.map(({ sport, leagues }, i) => (
           <DropdownMenuGroup key={sport.id}>
             {i > 0 ? <DropdownMenuSeparator /> : null}
-            <DropdownMenuLabel className="px-2.5 pt-2 pb-1.5 text-[11px] font-bold tracking-wide uppercase">
+            <DropdownMenuLabel className="px-2.5 pt-2 pb-1.5 text-xs font-bold tracking-wide uppercase">
               {sport.label}
             </DropdownMenuLabel>
             {leagues.map(({ league, volume, record }) => {
@@ -93,7 +93,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background">
-      <div className="mx-auto flex w-full max-w-7xl items-center gap-4 px-4 py-3">
+      <div className="mx-auto flex w-full max-w-[90rem] items-center gap-4 px-4 py-3">
         <Link
           to="/"
           className="flex shrink-0 items-center gap-2 font-heading text-xl font-medium transition-opacity hover:opacity-80"
@@ -152,7 +152,7 @@ export function Header() {
         </div>
       </div>
 
-      <nav className="mx-auto flex w-full max-w-7xl items-center gap-5 px-4 py-2">
+      <nav className="mx-auto flex w-full max-w-[90rem] items-center gap-5 px-4 py-2">
         <SportsNav />
       </nav>
     </header>

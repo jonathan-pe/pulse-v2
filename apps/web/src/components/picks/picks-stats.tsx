@@ -62,7 +62,7 @@ export function PicksStatsRow({ stats }: { stats: PicksStats }) {
         <div key={tile.label} className="rounded-xl border border-border bg-card p-4">
           <div className="mb-2.5 flex items-center gap-1.5 text-muted-foreground">
             <tile.icon className="size-3.5" strokeWidth={2.25} />
-            <span className="font-mono text-[10px] font-bold tracking-wide uppercase">{tile.label}</span>
+            <span className="font-mono text-xs font-bold tracking-wide uppercase">{tile.label}</span>
           </div>
           <div
             className={cn(

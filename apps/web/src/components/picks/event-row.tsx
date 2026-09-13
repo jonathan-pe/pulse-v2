@@ -79,10 +79,10 @@ function TeamRow({
       <TeamBadge team={team} />
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-semibold">{team.name}</div>
-        {team.record ? <div className="font-mono text-[11px] text-muted-foreground">{team.record}</div> : null}
+        {team.record ? <div className="font-mono text-xs text-muted-foreground">{team.record}</div> : null}
       </div>
       <div className="grid shrink-0 grid-cols-3 gap-1.5">
-        <div className="w-[88px]">
+        <div className="w-23">
           {moneyline && mlIndex !== undefined ? (
             <PriceCell
               market={moneyline}
@@ -96,7 +96,7 @@ function TeamRow({
             <EmptyCell />
           )}
         </div>
-        <div className="w-[88px]">
+        <div className="w-23">
           {spread && spreadIndex !== undefined ? (
             <PriceCell
               market={spread}
@@ -112,7 +112,7 @@ function TeamRow({
             <EmptyCell />
           )}
         </div>
-        <div className="w-[88px]">
+        <div className="w-23">
           {total && totalIndex !== undefined ? (
             <PriceCell
               market={total}
@@ -141,10 +141,10 @@ export function MarketColumnHeaders({ label }: { label?: string }) {
   return (
     <div className="flex items-center gap-3 px-3 pb-2">
       <div className="min-w-0 flex-1 text-sm font-bold tracking-wide text-foreground uppercase">{label}</div>
-      <div className="grid shrink-0 grid-cols-3 gap-1.5 text-center text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
-        <div className="w-[88px]">Moneyline</div>
-        <div className="w-[88px]">Spread</div>
-        <div className="w-[88px]">Total</div>
+      <div className="grid shrink-0 grid-cols-3 gap-1.5 text-center text-xs font-bold tracking-wide text-muted-foreground uppercase">
+        <div className="w-23">Moneyline</div>
+        <div className="w-23">Spread</div>
+        <div className="w-23">Total</div>
       </div>
     </div>
   )
@@ -168,13 +168,13 @@ export function EventRow({ data }: { data: EventWithMarkets }) {
   return (
     <Card className="mb-2.5 gap-0 overflow-hidden py-0">
       {data.event.isLive ? (
-        <div className="flex items-center gap-1.5 bg-ember/5 px-3 py-1.5 text-[11px] font-bold tracking-wide text-ember uppercase">
+        <div className="flex items-center gap-1.5 bg-ember/5 px-3 py-1.5 text-xs font-bold tracking-wide text-ember uppercase">
           <span className="size-1.5 shrink-0 rounded-full bg-ember motion-safe:animate-[pulse-dot_1.4s_ease-in-out_infinite]" />
           Live
           <span className="font-mono font-normal normal-case text-ember/70">· updated {timeAgo(data.event.lastSyncedAt)}</span>
         </div>
       ) : (
-        <div className="px-3 py-1.5 text-[11px] font-normal text-muted-foreground">
+        <div className="px-3 py-1.5 text-xs font-normal text-muted-foreground">
           {formatTime(data.event.startTime)}
         </div>
       )}

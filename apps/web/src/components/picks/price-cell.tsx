@@ -89,7 +89,7 @@ export function PriceCell({
       }}
       style={accentStyle}
       className={cn(
-        "h-[52px] w-full flex-col justify-center gap-1 rounded-md border text-center shadow-sm transition-colors",
+        "h-14 w-full flex-col justify-center gap-1 rounded-md border text-center shadow-sm transition-colors",
         tone === "win"
           ? confirmed
             ? "border-win bg-win text-win-foreground hover:bg-win"
@@ -109,16 +109,16 @@ export function PriceCell({
                 : "border-border bg-muted/40 hover:bg-muted",
       )}
     >
-      {topLabel ? <span className="font-mono text-[11px] font-semibold opacity-70">{topLabel}</span> : null}
-      <span className="font-mono text-[15px] font-bold tabular-nums">{(Number(price) * 100).toFixed(1)}%</span>
+      {topLabel ? <span className="font-mono text-xs font-semibold opacity-70">{topLabel}</span> : null}
+      <span className="font-mono text-base font-bold tabular-nums">{(Number(price) * 100).toFixed(1)}%</span>
     </Button>
   )
 }
 
 export function EmptyCell() {
   return (
-    <div className="flex h-[52px] items-center justify-center rounded-md border border-dashed border-border text-center">
-      <span className="font-mono text-[15px] text-muted-foreground/50">—</span>
+    <div className="flex h-14 items-center justify-center rounded-md border border-dashed border-border text-center">
+      <span className="font-mono text-base text-muted-foreground/50">—</span>
     </div>
   )
 }

@@ -129,7 +129,7 @@ export function PickSlip() {
                   <Notch side="right" />
                 </>
               ) : null}
-              <div className="mb-2 truncate text-[11.5px] text-muted-foreground">{group.eventTitle}</div>
+              <div className="mb-2 truncate text-xs text-muted-foreground">{group.eventTitle}</div>
               <div className="flex flex-col gap-2.5">
                 {group.picks.map((entry) => {
                   const error = errors.get(entry.marketId)
@@ -139,8 +139,8 @@ export function PickSlip() {
                         <div className="flex min-w-0 items-center gap-2">
                           <EntryBadge entry={entry} />
                           <div className="min-w-0">
-                            <div className="truncate text-[13.5px] leading-tight font-semibold">{entry.outcomeName}</div>
-                            <div className="text-[11.5px] leading-tight text-muted-foreground">{MARKET_LABEL[entry.marketType]}</div>
+                            <div className="truncate text-sm leading-tight font-semibold">{entry.outcomeName}</div>
+                            <div className="text-xs leading-tight text-muted-foreground">{MARKET_LABEL[entry.marketType]}</div>
                           </div>
                         </div>
                         <span
@@ -160,7 +160,7 @@ export function PickSlip() {
                           <Trash2 className="size-3.5" />
                         </Button>
                       </div>
-                      {error ? <div className="mt-1 text-[11px] text-destructive">{error}</div> : null}
+                      {error ? <div className="mt-1 text-xs text-destructive">{error}</div> : null}
                     </div>
                   )
                 })}

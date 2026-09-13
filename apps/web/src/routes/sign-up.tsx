@@ -70,10 +70,10 @@ function SignUpPage() {
   return (
     <div className="mx-auto grid w-full max-w-4xl flex-1 grid-cols-[1fr_384px] items-center gap-12 px-4 py-16 max-lg:grid-cols-1 max-lg:gap-6 max-lg:py-10">
       <div className="max-lg:hidden">
-        <div className="mb-2 font-mono text-[11px] font-bold tracking-wide text-muted-foreground uppercase">
+        <div className="mb-2 font-mono text-xs font-bold tracking-wide text-muted-foreground uppercase">
           Free · every game · every week
         </div>
-        <h1 className="mb-2 font-heading text-[28px] leading-[1.15] font-semibold text-foreground">
+        <h1 className="mb-2 font-heading text-3xl leading-tight font-semibold text-foreground">
           Being right isn't enough.
           <br />
           Being sure counts too.
@@ -82,7 +82,7 @@ function SignUpPage() {
           Free picks, real odds, and a score that shows exactly how sharp your reads are — not just whether you won.
         </p>
         <div className="rounded-xl bg-card p-4 shadow-sm">
-          <div className="mb-3 font-mono text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
+          <div className="mb-3 font-mono text-xs font-bold tracking-wide text-muted-foreground uppercase">
             Calibration — example
           </div>
           <CalibrationGauge brierScore={0.14} caption="Top 18% last week" />

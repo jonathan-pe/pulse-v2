@@ -97,7 +97,7 @@ function sortableHeader(label: string, align: 'left' | 'right' = 'left') {
         type="button"
         onClick={() => column.toggleSorting(sorted === 'desc' ? false : true)}
         className={cn(
-          'inline-flex items-center gap-1 text-[10px] font-bold tracking-wide uppercase transition-colors hover:text-foreground',
+          'inline-flex items-center gap-1 text-xs font-bold tracking-wide uppercase transition-colors hover:text-foreground',
           sorted ? 'text-foreground' : 'text-muted-foreground',
           align === 'right' && 'flex-row-reverse',
         )}
@@ -122,13 +122,13 @@ const columns = [
             className="size-6 shrink-0 rounded-md"
             team={{ name: event.teamAName, logoUrl: event.teamALogoUrl, color: event.teamAColor, record: null }}
           />
-          <span className="max-w-[110px] truncate font-semibold">{event.teamAName}</span>
+          <span className="max-w-28 truncate font-semibold">{event.teamAName}</span>
           <span className="shrink-0 text-xs text-muted-foreground">vs.</span>
           <TeamBadge
             className="size-6 shrink-0 rounded-md"
             team={{ name: event.teamBName, logoUrl: event.teamBLogoUrl, color: event.teamBColor, record: null }}
           />
-          <span className="max-w-[110px] truncate font-semibold">{event.teamBName}</span>
+          <span className="max-w-28 truncate font-semibold">{event.teamBName}</span>
         </div>
       )
     },
@@ -234,7 +234,7 @@ export function PicksTable({
               <TableHead
                 key={header.id}
                 className={cn(
-                  'h-auto py-2.5 text-[10px] font-bold tracking-wide text-muted-foreground uppercase',
+                  'h-auto py-2.5 text-xs font-bold tracking-wide text-muted-foreground uppercase',
                   i === 0 && 'pl-4',
                   i === headerGroup.headers.length - 1 && 'pr-4 text-right',
                 )}

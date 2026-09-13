@@ -19,7 +19,13 @@
   --heading: 'Bricolage Grotesque Variable', 'Plus Jakarta Sans Variable', system-ui, sans-serif;
   --mono: 'Roboto Mono Variable', ui-monospace, monospace;
 
-  font: 15px/145% var(--sans);
+  /* Root font-size, not just a text-size choice — Tailwind's own spacing
+     scale (gap-*, p-*, size-*, h-8 on buttons, etc.) is rem-based, so this
+     one value scales nearly every gap and control in the app along with
+     the type. The handful of spots that intentionally use arbitrary px
+     instead (event-row.tsx/price-cell.tsx's grid-aligned game rows) don't
+     inherit this and were bumped by hand to match. */
+  font: 16px/155% var(--sans);
   letter-spacing: 0.1px;
   color-scheme: light dark;
   color: var(--text);
@@ -30,7 +36,7 @@
   -moz-osx-font-smoothing: grayscale;
 
   @media (max-width: 1024px) {
-    font-size: 14px;
+    font-size: 15px;
   }
 
   /* Pulse Violet brand theme, dark-first (see prefers-color-scheme block

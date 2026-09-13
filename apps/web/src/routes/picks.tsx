@@ -41,7 +41,7 @@ function MyPicksPage() {
   const hasAnyPicksAtAll = !isPending && data && data.total === 0 && !search.league && !search.marketType && !search.status && !search.from && !search.to
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-10">
+    <div className="mx-auto w-full max-w-[90rem] px-4 py-10">
       <div className="mb-6">
         <h1 className="font-heading text-2xl font-semibold">My Picks</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">Your full record across every market you've picked.</p>
@@ -89,7 +89,7 @@ function PicksLoadingSkeleton() {
     <div>
       <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-[74px] rounded-xl" />
+          <Skeleton key={i} className="h-18 rounded-xl" />
         ))}
       </div>
       <Skeleton className="mb-4 h-11 rounded-xl" />

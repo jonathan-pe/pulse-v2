@@ -18,7 +18,7 @@ export function LeagueRail({
 
   return (
     <nav className="rounded-xl bg-card p-2 shadow-sm">
-      <div className="mb-1 px-2.5 pt-1 text-[11px] font-bold tracking-wide text-muted-foreground uppercase">
+      <div className="mb-1 px-2.5 pt-1 text-xs font-bold tracking-wide text-muted-foreground uppercase">
         Leagues
       </div>
       <div className="flex flex-col gap-0.5">
@@ -40,7 +40,7 @@ export function LeagueRail({
               <span>{l.label}</span>
               <span
                 className={cn(
-                  "rounded-full px-1.5 py-0.5 font-mono text-[10px] tabular-nums",
+                  "rounded-full px-1.5 py-0.5 font-mono text-xs tabular-nums",
                   isSelected ? "bg-primary-foreground/15" : "bg-muted text-muted-foreground",
                 )}
               >

@@ -50,14 +50,14 @@ function HomeComponent() {
   const record = summarizePicks(picks)
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-8">
+    <div className="mx-auto w-full max-w-[90rem] px-4 py-8">
       {!isAuthPending && !user ? (
         <div className="mb-10 grid grid-cols-[1.1fr_0.9fr] items-center gap-6 rounded-2xl border border-border bg-card p-6 max-lg:grid-cols-1">
           <div>
-            <div className="mb-2 font-mono text-[11px] font-bold tracking-wide text-muted-foreground uppercase">
+            <div className="mb-2 font-mono text-xs font-bold tracking-wide text-muted-foreground uppercase">
               Free · every game · every week
             </div>
-            <h2 className="mb-2 font-heading text-[28px] leading-[1.15] font-semibold text-foreground">
+            <h2 className="mb-2 font-heading text-3xl leading-tight font-semibold text-foreground">
               Being right isn't enough.
               <br />
               Being sure counts too.
@@ -74,7 +74,7 @@ function HomeComponent() {
             </div>
           </div>
           <div className="rounded-xl bg-muted/40 p-4">
-            <div className="mb-3 font-mono text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
+            <div className="mb-3 font-mono text-xs font-bold tracking-wide text-muted-foreground uppercase">
               Your calibration — example
             </div>
             <CalibrationGauge brierScore={0.14} caption="Top 18% last week" />
@@ -91,7 +91,7 @@ function HomeComponent() {
                 key={league.id}
                 to="/sports/$sport/$league"
                 params={{ sport: league.sport, league: league.id }}
-                className="flex min-w-[112px] flex-col gap-0.5 rounded-xl bg-card px-3.5 py-2.5 shadow-sm ring-1 ring-foreground/10 transition-colors hover:ring-primary/40"
+                className="flex min-w-28 flex-col gap-0.5 rounded-xl bg-card px-3.5 py-2.5 shadow-sm ring-1 ring-foreground/10 transition-colors hover:ring-primary/40"
               >
                 <span className="text-sm font-semibold">{league.label}</span>
                 {leagueRecord && leagueRecord.won + leagueRecord.lost > 0 ? (
@@ -152,7 +152,7 @@ function HomeComponent() {
                 <Card size="sm" className="shadow-sm">
                   <CardContent className="flex items-center justify-between">
                     <div>
-                      <div className="mb-1 font-mono text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
+                      <div className="mb-1 font-mono text-xs font-bold tracking-wide text-muted-foreground uppercase">
                         Your record
                       </div>
                       <div className="font-heading text-xl font-semibold">
