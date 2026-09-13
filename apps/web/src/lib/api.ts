@@ -10,8 +10,25 @@ export interface MarketWithPick {
   yourPick: { outcomeIndex: number; priceAtPick: string } | null
 }
 
+export interface TeamSummary {
+  name: string
+  logoUrl: string | null
+  color: string | null
+  record: string | null
+}
+
 export interface EventWithMarkets {
-  event: { id: string; title: string; startTime: string; leagueId: string; volume: string }
+  event: {
+    id: string
+    title: string
+    startTime: string
+    leagueId: string
+    volume: string
+    isLive: boolean
+    lastSyncedAt: string
+    teamA: TeamSummary
+    teamB: TeamSummary
+  }
   markets: MarketWithPick[]
 }
 

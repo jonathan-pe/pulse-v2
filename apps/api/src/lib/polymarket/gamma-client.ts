@@ -57,7 +57,37 @@ export interface GammaEvent {
   // (which side won), the actual score. Absent until the real-world game
   // has a score to report; Polymarket sends no field at all until then.
   score: string | null | undefined
+  // Both absent until the game actually starts, same as `score` above.
+  // `period` is sport-native scoreboard text ("Bot 7th", "NS", "FT") rather
+  // than a normalized enum — its shape differs per sport and Polymarket
+  // already renders it exactly as a fan would expect. NOT modeled for
+  // display in our own UI (see event.isLive in schema.ts for why); kept here
+  // only because it costs nothing to capture for a possible future
+  // faster-polling live path.
+  live: boolean | null | undefined
+  period: string | null | undefined
   markets: GammaMarket[]
+}
+
+// Only the fields ingestion actually reads — same "narrow subset" approach
+// as GammaMarket/GammaEvent above. Backs the undocumented endpoint behind
+// polymarket.com/teams/{league}/{slug}.
+//
+// Polymarket is inconsistent about which of `name`/`alias` holds the full
+// team name vs. the nickname — NFL has name="Atlanta Falcons"/alias="Falcons",
+// while MLB has name="Tampa Bay Rays" with no shorter alias in play. A game
+// market's own outcome text (what ingestion actually needs to match against)
+// can land in either field depending on league. There is no server-side
+// filter that searches both — the `name` query param only matches the exact
+// `name` field verbatim, and `alias`/`search` params are silently ignored
+// (confirmed: passing either returns the same unfiltered list `league` alone
+// would) — so matching happens client-side in matchGammaTeam below.
+export interface GammaTeam {
+  name: string
+  alias: string | null
+  logo: string
+  color: string | null
+  record: string | null
 }
 
 const IN_SCOPE_MARKET_TYPES = new Set(['moneyline', 'spreads', 'totals'])
@@ -152,4 +182,30 @@ export async function fetchGammaEventsByIds(ids: string[]): Promise<GammaEvent[]
     for (const event of fetched) if (event) results.push(event)
   }
   return results
+}
+
+// Paginates the full roster for a league (~30-35 teams for the leagues we
+// support — a couple of requests, not per-team) rather than querying by
+// name per team: see the no-alias-filter note on GammaTeam above for why a
+// single query per team wouldn't even work reliably.
+const TEAMS_PAGE_SIZE = 100
+
+export async function fetchGammaTeams(league: string): Promise<GammaTeam[]> {
+  const results: GammaTeam[] = []
+  let offset = 0
+  while (true) {
+    const page = await gammaFetch<GammaTeam[]>('/teams', { league, limit: TEAMS_PAGE_SIZE, offset })
+    results.push(...page)
+    if (page.length < TEAMS_PAGE_SIZE) break
+    offset += TEAMS_PAGE_SIZE
+  }
+  return results
+}
+
+// Exact, case-sensitive match against whichever of `name`/`alias` a game
+// market's own outcome text actually lands in for this league (see the note
+// on GammaTeam). Null on a miss — an unmapped or renamed team should degrade
+// to the initials badge, not break ingestion.
+export function matchGammaTeam(teams: GammaTeam[], outcomeName: string): GammaTeam | null {
+  return teams.find((t) => t.name === outcomeName || t.alias === outcomeName) ?? null
 }

@@ -6,10 +6,13 @@ import {
   fetchGammaEvents,
   fetchGammaEventsByIds,
   fetchGammaMarketsByIds,
+  fetchGammaTeams,
   isInScopeMarketType,
+  matchGammaTeam,
   parseOutcomes,
   type GammaEvent,
   type GammaMarket,
+  type GammaTeam,
 } from '../polymarket/gamma-client.js'
 
 const PAGE_SIZE = 100
@@ -40,14 +43,44 @@ function chunk<T>(items: T[], size: number): T[][] {
   return chunks
 }
 
-async function upsertTeam(leagueId: string, name: string): Promise<string> {
+// A miss (gammaTeam === null — lookup failed, or the team just isn't in
+// Polymarket's /teams data) omits these keys entirely rather than writing
+// null over them, so a transient lookup failure can't blank out a row that
+// already resolved correctly on a prior ingestion pass.
+function gammaTeamFields(gammaTeam: GammaTeam | null) {
+  return gammaTeam ? { logoUrl: gammaTeam.logo, color: gammaTeam.color, record: gammaTeam.record } : {}
+}
+
+// One roster fetch per league per ingestion run, cached for every team
+// upsert in that run (a team appears once per game it plays that week, and
+// discovery processes every one of those events) — matchGammaTeam then
+// resolves each team against it locally, in memory, no further requests.
+// Module-level rather than threaded through every call: the API runs as a
+// stateless-per-invocation Vercel function (see apps/api/CLAUDE.md), so this
+// is naturally scoped to one ingestion run and never needs invalidation.
+const gammaTeamsCache = new Map<string, Promise<GammaTeam[]>>()
+
+function getGammaTeams(polymarketTagSlug: string): Promise<GammaTeam[]> {
+  let promise = gammaTeamsCache.get(polymarketTagSlug)
+  if (!promise) {
+    promise = fetchGammaTeams(polymarketTagSlug)
+    gammaTeamsCache.set(polymarketTagSlug, promise)
+  }
+  return promise
+}
+
+async function upsertTeam(leagueRow: { id: string; polymarketTagSlug: string }, name: string): Promise<string> {
   const db = getDb()
+  // Re-resolved on every ingestion pass, not just first insert, so a moved
+  // logo URL or an updated season record heals itself on the next cron run.
+  const gammaTeams = await getGammaTeams(leagueRow.polymarketTagSlug)
+  const gammaTeam = matchGammaTeam(gammaTeams, name)
   const [row] = await db
     .insert(team)
-    .values({ leagueId, name })
+    .values({ leagueId: leagueRow.id, name, ...gammaTeamFields(gammaTeam) })
     .onConflictDoUpdate({
       target: [team.leagueId, team.name],
-      set: { name },
+      set: { name, ...gammaTeamFields(gammaTeam) },
     })
     .returning({ id: team.id })
   return row.id
@@ -72,7 +105,11 @@ function deriveMarketStatus(raw: GammaMarket): 'scheduled' | 'closed' | 'resolve
   return 'scheduled'
 }
 
-async function upsertEventWithMarkets(leagueId: string, raw: GammaEvent, markets: GammaMarket[]) {
+async function upsertEventWithMarkets(
+  leagueRow: { id: string; polymarketTagSlug: string },
+  raw: GammaEvent,
+  markets: GammaMarket[],
+) {
   const db = getDb()
 
   // Different markets on the same event can list outcomes in different
@@ -84,17 +121,18 @@ async function upsertEventWithMarkets(leagueId: string, raw: GammaEvent, markets
   if (!isWithinDiscoveryWindow(moneyline.gameStartTime)) return
 
   const { names: moneylineNames } = parseOutcomes(moneyline)
-  const teamAId = await upsertTeam(leagueId, moneylineNames[0])
-  const teamBId = await upsertTeam(leagueId, moneylineNames[1])
+  const teamAId = await upsertTeam(leagueRow, moneylineNames[0])
+  const teamBId = await upsertTeam(leagueRow, moneylineNames[1])
 
   const gameStartTime = new Date(moneyline.gameStartTime!)
   const eventStatus = raw.closed ? 'closed' : 'scheduled'
   const score = parseScore(raw.score)
+  const isLive = raw.live ?? false
   const [eventRow] = await db
     .insert(event)
     .values({
       externalId: raw.id,
-      leagueId,
+      leagueId: leagueRow.id,
       teamAId,
       teamBId,
       title: raw.title,
@@ -103,6 +141,7 @@ async function upsertEventWithMarkets(leagueId: string, raw: GammaEvent, markets
       volume: raw.volume == null ? '0' : String(raw.volume),
       teamAScore: score?.teamAScore ?? null,
       teamBScore: score?.teamBScore ?? null,
+      isLive,
       lastSyncedAt: new Date(),
     })
     .onConflictDoUpdate({
@@ -114,6 +153,7 @@ async function upsertEventWithMarkets(leagueId: string, raw: GammaEvent, markets
         volume: raw.volume == null ? '0' : String(raw.volume),
         teamAScore: score?.teamAScore ?? null,
         teamBScore: score?.teamBScore ?? null,
+        isLive,
         lastSyncedAt: new Date(),
       },
     })
@@ -182,7 +222,7 @@ async function discoverLeague(leagueRow: { id: string; polymarketTagSlug: string
     for (const raw of events) {
       const inScopeMarkets = raw.markets.filter(isInScopeMarketType)
       if (inScopeMarkets.length === 0) continue // e.g. futures-only events
-      await upsertEventWithMarkets(leagueRow.id, raw, inScopeMarkets)
+      await upsertEventWithMarkets(leagueRow, raw, inScopeMarkets)
     }
     offset += PAGE_SIZE
   }

@@ -121,6 +121,16 @@ export const team = pgTable(
       .notNull()
       .references(() => league.id),
     name: text("name").notNull(),
+    // Sourced from Polymarket's own (undocumented) `/teams` endpoint, keyed
+    // by exact-match on this team's name within its league — see
+    // fetchGammaTeam(). Re-resolved on every ingestion pass rather than only
+    // on first insert, so a moved logo or a mid-season record heals itself
+    // automatically instead of going stale until someone notices. Null means
+    // the lookup hasn't hit yet (or ever) for this team; UI falls back to an
+    // initials badge with no color tint.
+    logoUrl: text("logo_url"),
+    color: text("color"), // e.g. "#004A93" — team's own brand hex, badge tint
+    record: text("record"), // e.g. "7-9-1", Polymarket's own W-L(-T) string
   },
   (table) => [uniqueIndex("team_league_name_idx").on(table.leagueId, table.name)],
 );
@@ -165,6 +175,16 @@ export const event = pgTable(
     // independent of (and generally before) UMA market resolution.
     teamAScore: integer("team_a_score"),
     teamBScore: integer("team_b_score"),
+    // Polymarket's own event.live boolean, refreshed on every discovery pass
+    // alongside score above. NOT paired with a live play-by-play clock in the
+    // UI — ingestion runs every 15min, so a precise inning/quarter label
+    // would already be stale by display time. This flag is safe to show
+    // as-is: a game essentially never flips live -> not-live within one
+    // ingestion window, so staleness here isn't consequential the way it
+    // would be for a period string. Frontend should still gate display on
+    // lastSyncedAt recency as a defensive measure against a genuinely stuck
+    // row (e.g. an event that stopped being returned by discovery entirely).
+    isLive: boolean("is_live").notNull().default(false),
     lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index("event_league_status_idx").on(table.leagueId, table.status)],

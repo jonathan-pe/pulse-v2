@@ -6,6 +6,15 @@ import { event, market, pick, team } from '../db/schema.js'
 
 const teamA = alias(team, 'pick_team_a')
 const teamB = alias(team, 'pick_team_b')
+const openTeamA = alias(team, 'open_team_a')
+const openTeamB = alias(team, 'open_team_b')
+
+export interface TeamSummary {
+  name: string
+  logoUrl: string | null
+  color: string | null
+  record: string | null
+}
 
 // market.status only flips when the ingestion cron notices Polymarket closed
 // it, so relying on status alone would let a pick through for up to ~5
@@ -34,7 +43,17 @@ export interface MarketWithPick {
 }
 
 export interface EventWithMarkets {
-  event: { id: string; title: string; startTime: Date; leagueId: string; volume: string }
+  event: {
+    id: string
+    title: string
+    startTime: Date
+    leagueId: string
+    volume: string
+    isLive: boolean
+    lastSyncedAt: Date
+    teamA: TeamSummary
+    teamB: TeamSummary
+  }
   markets: MarketWithPick[]
 }
 
@@ -46,9 +65,17 @@ async function fetchOpenEvents(userId: string | undefined, leagueId?: string): P
   const now = new Date()
 
   const rows = await db
-    .select({ event, market, pick })
+    .select({
+      event,
+      market,
+      pick,
+      teamA: { name: openTeamA.name, logoUrl: openTeamA.logoUrl, color: openTeamA.color, record: openTeamA.record },
+      teamB: { name: openTeamB.name, logoUrl: openTeamB.logoUrl, color: openTeamB.color, record: openTeamB.record },
+    })
     .from(event)
     .innerJoin(market, eq(market.eventId, event.id))
+    .innerJoin(openTeamA, eq(openTeamA.id, event.teamAId))
+    .innerJoin(openTeamB, eq(openTeamB.id, event.teamBId))
     .leftJoin(pick, and(eq(pick.marketId, market.id), userId ? eq(pick.userId, userId) : sql`false`))
     .where(
       and(ne(event.status, 'resolved'), ne(market.status, 'resolved'), leagueId ? eq(event.leagueId, leagueId) : undefined),
@@ -63,7 +90,7 @@ async function fetchOpenEvents(userId: string | undefined, leagueId?: string): P
 
     let entry = eventsById.get(row.event.id)
     if (!entry) {
-      entry = { event: row.event, markets: [] }
+      entry = { event: { ...row.event, teamA: row.teamA, teamB: row.teamB }, markets: [] }
       eventsById.set(row.event.id, entry)
     }
     entry.markets.push({
