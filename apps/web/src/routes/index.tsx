@@ -91,7 +91,7 @@ function HomeComponent() {
                 key={league.id}
                 to="/sports/$sport/$league"
                 params={{ sport: league.sport, league: league.id }}
-                className="flex min-w-[112px] flex-col gap-0.5 rounded-xl bg-card px-3.5 py-2.5 ring-1 ring-foreground/10 transition-colors hover:ring-primary/40"
+                className="flex min-w-[112px] flex-col gap-0.5 rounded-xl bg-card px-3.5 py-2.5 shadow-sm ring-1 ring-foreground/10 transition-colors hover:ring-primary/40"
               >
                 <span className="text-sm font-semibold">{league.label}</span>
                 {leagueRecord && leagueRecord.won + leagueRecord.lost > 0 ? (
@@ -149,7 +149,7 @@ function HomeComponent() {
             </div>
             <div className="flex flex-col gap-3">
               {user && picks.length > 0 ? (
-                <Card size="sm">
+                <Card size="sm" className="shadow-sm">
                   <CardContent className="flex items-center justify-between">
                     <div>
                       <div className="mb-1 font-mono text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
