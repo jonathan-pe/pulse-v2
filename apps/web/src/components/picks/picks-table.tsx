@@ -11,6 +11,7 @@ import {
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import { TeamBadge } from '@/components/picks/team-badge'
 import { cn } from '@/lib/utils'
 import { formatPoints } from '@/lib/picks-summary'
 import type { PickOutcomeStatus, PickResult } from '@/lib/api'
@@ -110,18 +111,33 @@ function sortableHeader(label: string, align: 'left' | 'right' = 'left') {
 
 const columns = [
   columnHelper.display({
-    id: 'date',
-    enableSorting: true,
-    header: sortableHeader('Event'),
+    id: 'event',
+    enableSorting: false,
+    header: 'Event',
     cell: ({ row }) => {
-      const result = row.original
+      const { event } = row.original
       return (
-        <>
-          <div className="truncate font-semibold">{result.event.title}</div>
-          <div className="text-xs text-muted-foreground">{formatDate(result.event.startTime)}</div>
-        </>
+        <div className="flex items-center gap-1.5">
+          <TeamBadge
+            className="size-6 shrink-0 rounded-md"
+            team={{ name: event.teamAName, logoUrl: event.teamALogoUrl, color: event.teamAColor, record: null }}
+          />
+          <span className="max-w-[110px] truncate font-semibold">{event.teamAName}</span>
+          <span className="shrink-0 text-xs text-muted-foreground">vs.</span>
+          <TeamBadge
+            className="size-6 shrink-0 rounded-md"
+            team={{ name: event.teamBName, logoUrl: event.teamBLogoUrl, color: event.teamBColor, record: null }}
+          />
+          <span className="max-w-[110px] truncate font-semibold">{event.teamBName}</span>
+        </div>
       )
     },
+  }),
+  columnHelper.display({
+    id: 'date',
+    enableSorting: true,
+    header: sortableHeader('Date'),
+    cell: ({ row }) => formatDate(row.original.event.startTime),
   }),
   columnHelper.display({
     id: 'yourPick',
@@ -173,7 +189,7 @@ const columns = [
   }),
 ]
 
-const COLUMN_WIDTHS = [undefined, 160, 70, 80, 100, 90]
+const COLUMN_WIDTHS = [undefined, 90, 160, 70, 80, 100, 90]
 
 export function PicksTable({
   picks,
@@ -241,6 +257,7 @@ export function PicksTable({
                   className={cn(
                     'py-3 whitespace-normal',
                     i === 0 && 'pl-4 text-left',
+                    cell.column.id === 'date' && 'text-left text-sm text-muted-foreground',
                     cell.column.id === 'score' && 'text-left font-mono text-sm tabular-nums text-muted-foreground',
                     cell.column.id === 'odds' && 'text-left font-mono text-sm tabular-nums text-muted-foreground',
                     cell.column.id === 'points' &&

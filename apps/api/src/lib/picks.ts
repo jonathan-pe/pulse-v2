@@ -200,6 +200,10 @@ export interface PickResult {
     leagueId: string
     teamAName: string
     teamBName: string
+    teamALogoUrl: string | null
+    teamAColor: string | null
+    teamBLogoUrl: string | null
+    teamBColor: string | null
     // Final score, teamA/teamB order — null until the real-world game ends,
     // independent of (and generally set before) market resolution.
     teamAScore: number | null
@@ -294,7 +298,17 @@ function computeStats(results: PickResult[]): PicksStats {
 export async function listMyPicks(userId: string, params: ListMyPicksParams): Promise<ListMyPicksResult> {
   const db = getDb()
   const rows = await db
-    .select({ pick, market, event, teamAName: teamA.name, teamBName: teamB.name })
+    .select({
+      pick,
+      market,
+      event,
+      teamAName: teamA.name,
+      teamBName: teamB.name,
+      teamALogoUrl: teamA.logoUrl,
+      teamAColor: teamA.color,
+      teamBLogoUrl: teamB.logoUrl,
+      teamBColor: teamB.color,
+    })
     .from(pick)
     .innerJoin(market, eq(pick.marketId, market.id))
     .innerJoin(event, eq(market.eventId, event.id))
@@ -314,7 +328,15 @@ export async function listMyPicks(userId: string, params: ListMyPicksParams): Pr
   let results: PickResult[] = rows.map((row) => ({
     pick: row.pick,
     market: row.market,
-    event: { ...row.event, teamAName: row.teamAName, teamBName: row.teamBName },
+    event: {
+      ...row.event,
+      teamAName: row.teamAName,
+      teamBName: row.teamBName,
+      teamALogoUrl: row.teamALogoUrl,
+      teamAColor: row.teamAColor,
+      teamBLogoUrl: row.teamBLogoUrl,
+      teamBColor: row.teamBColor,
+    },
     // Settled picks use the cached columns settlePicksForMarket() wrote;
     // upcoming/pending (settledStatus still null) are derived live since
     // they can flip every ingestion cycle and were never persisted.

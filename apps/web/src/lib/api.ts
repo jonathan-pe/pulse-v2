@@ -50,6 +50,10 @@ export interface PickResult {
     leagueId: string
     teamAName: string
     teamBName: string
+    teamALogoUrl: string | null
+    teamAColor: string | null
+    teamBLogoUrl: string | null
+    teamBColor: string | null
     teamAScore: number | null
     teamBScore: number | null
   }
