@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { GoogleButton } from '@/components/auth/google-button'
 import { OtpStep } from '@/components/auth/otp-step'
+import { CalibrationGauge } from '@/components/picks/calibration-gauge'
 import { authClient } from '@/lib/auth-client'
 
 export const Route = createFileRoute('/sign-in')({
@@ -63,8 +64,27 @@ function SignInPage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-6 px-4 py-16">
-      <Card>
+    <div className="mx-auto grid w-full max-w-4xl flex-1 grid-cols-[1fr_384px] items-center gap-12 px-4 py-16 max-lg:grid-cols-1 max-lg:gap-6 max-lg:py-10">
+      <div className="max-lg:hidden">
+        <div className="mb-2 font-mono text-[11px] font-bold tracking-wide text-muted-foreground uppercase">
+          Free · every game · every week
+        </div>
+        <h1 className="mb-2 font-heading text-[28px] leading-[1.15] font-semibold text-foreground">
+          Pick up right where you left off.
+        </h1>
+        <p className="mb-6 max-w-[38ch] text-sm text-muted-foreground">
+          Your record, your points, and your calibration score are all waiting — sign in to see how sharp your reads
+          have been.
+        </p>
+        <div className="rounded-xl bg-card p-4 shadow-sm">
+          <div className="mb-3 font-mono text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
+            Calibration — example
+          </div>
+          <CalibrationGauge brierScore={0.14} caption="Top 18% last week" />
+        </div>
+      </div>
+
+      <Card className="w-full max-w-sm justify-self-center">
         <CardHeader>
           <CardTitle>{step === 'form' ? 'Sign in' : 'Verify your email'}</CardTitle>
           {step === 'form' ? (
