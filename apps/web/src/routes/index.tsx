@@ -2,7 +2,8 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { EventRow } from '@/components/picks/event-row'
+import { CalibrationGauge } from '@/components/picks/calibration-gauge'
+import { EventRow, MarketColumnHeaders } from '@/components/picks/event-row'
 import { PickSlip } from '@/components/picks/pick-slip'
 import { StagingProvider } from '@/hooks/usePicksStaging'
 import { useAuth } from '@/hooks/useAuth'
@@ -51,22 +52,32 @@ function HomeComponent() {
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8">
       {!isAuthPending && !user ? (
-        <div className="mb-10 flex flex-col gap-4 rounded-2xl border border-border bg-card p-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-10 grid grid-cols-[1.1fr_0.9fr] items-center gap-6 rounded-2xl border border-border bg-card p-6 max-lg:grid-cols-1">
           <div>
             <div className="mb-2 font-mono text-[11px] font-bold tracking-wide text-muted-foreground uppercase">
               Free · every game · every week
             </div>
-            <h2 className="mb-1 font-heading text-2xl font-semibold text-foreground">Pick winners.</h2>
-            <p className="max-w-md text-sm text-muted-foreground">
-              Points for calling it right, plus a calibration score that keeps you honest about how sure you really
-              were.
+            <h2 className="mb-2 font-heading text-[28px] leading-[1.15] font-semibold text-foreground">
+              Being right isn't enough.
+              <br />
+              Being sure counts too.
+            </h2>
+            <p className="mb-4 max-w-[42ch] text-sm text-muted-foreground">
+              Every pick scores on points won and on how well your confidence matched reality — call a coin flip a
+              lock, and it costs you, even if you're right.
             </p>
+            <div className="flex shrink-0 items-center gap-2">
+              <Button render={<Link to="/sign-up" />}>Sign up</Button>
+              <Button variant="outline" render={<Link to="/sign-in" />}>
+                Sign in
+              </Button>
+            </div>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <Button render={<Link to="/sign-up" />}>Sign up</Button>
-            <Button variant="outline" render={<Link to="/sign-in" />}>
-              Sign in
-            </Button>
+          <div className="rounded-xl bg-muted/40 p-4">
+            <div className="mb-3 font-mono text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
+              Your calibration — example
+            </div>
+            <CalibrationGauge brierScore={0.14} caption="Top 18% last week" />
           </div>
         </div>
       ) : null}
@@ -107,7 +118,9 @@ function HomeComponent() {
         </p>
       ) : null}
 
-      <div className="mb-2.5 text-xs font-bold tracking-wide text-muted-foreground uppercase">Popular</div>
+      {isMarketsPending || isMarketsError || events.length === 0 ? (
+        <div className="mb-2.5 text-xs font-bold tracking-wide text-muted-foreground uppercase">Popular</div>
+      ) : null}
       {isMarketsPending ? (
         <div className="mb-10 flex flex-col gap-2.5">
           {Array.from({ length: POPULAR_LIMIT }, (_, i) => (
@@ -129,6 +142,7 @@ function HomeComponent() {
         <StagingProvider>
           <div className="mb-12 grid grid-cols-[minmax(0,1fr)_296px] items-start gap-5 max-lg:grid-cols-1">
             <div>
+              <MarketColumnHeaders label="Popular" />
               {popularEvents(events).map((e) => (
                 <EventRow key={e.event.id} data={e} />
               ))}

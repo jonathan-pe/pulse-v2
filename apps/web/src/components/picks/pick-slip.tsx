@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router"
-import { X } from "lucide-react"
+import { Ticket, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/hooks/useAuth"
@@ -11,6 +11,24 @@ const MARKET_LABEL = {
   totals: "Total",
 } as const
 
+// The circular notches at each divider are a literal ticket perforation —
+// `Ticket` is already the icon used for "My Picks" in the header, so this
+// leans into an identity the app already chose rather than inventing a new
+// one. Each notch is a background-colored circle straddling the card's own
+// edge, half-clipped by the card's overflow-hidden — same illusion a real
+// perforated ticket stub uses.
+function Notch({ side }: { side: "left" | "right" }) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "absolute top-0 size-3.5 -translate-y-1/2 rounded-full bg-background",
+        side === "left" ? "left-0 -translate-x-1/2" : "right-0 translate-x-1/2",
+      )}
+    />
+  )
+}
+
 export function PickSlip() {
   const { user } = useAuth()
   const { staged, errors, isConfirming, unstage, clearStaged, confirmAll } = useStaging()
@@ -19,7 +37,10 @@ export function PickSlip() {
   return (
     <div className="sticky top-24 overflow-hidden rounded-2xl bg-card shadow-sm">
       <div className="flex items-center justify-between border-b border-border px-4 py-3.5">
-        <span className="font-semibold">Picks</span>
+        <span className="flex items-center gap-1.5 font-semibold">
+          <Ticket className="size-4 text-muted-foreground" />
+          Picks
+        </span>
         <span className="font-mono text-xs tabular-nums text-muted-foreground">
           {entries.length > 0 ? `${entries.length} staged` : null}
         </span>
@@ -33,7 +54,7 @@ export function PickSlip() {
         </p>
       ) : (
         <div className="flex flex-col">
-          {entries.map((entry) => {
+          {entries.map((entry, i) => {
             const error = errors.get(entry.marketId)
             return (
               <div
@@ -43,6 +64,12 @@ export function PickSlip() {
                   error && "bg-destructive/5",
                 )}
               >
+                {i > 0 ? (
+                  <>
+                    <Notch side="left" />
+                    <Notch side="right" />
+                  </>
+                ) : null}
                 <Button
                   type="button"
                   variant="ghost"

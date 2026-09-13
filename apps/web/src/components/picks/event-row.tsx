@@ -1,8 +1,9 @@
 import { Card } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
-import type { EventWithMarkets, MarketWithPick } from "@/lib/api"
+import { timeAgo } from "@/lib/format"
+import type { EventWithMarkets, MarketWithPick, TeamSummary } from "@/lib/api"
 import { EmptyCell, PriceCell } from "./price-cell"
+import { TeamBadge } from "./team-badge"
 
 // `line` is stored signed relative to outcome index 0 within its own market
 // (independent of moneyline's outcome order) — the paired outcome always
@@ -45,6 +46,97 @@ function findOutcomeIndex(market: MarketWithPick | undefined, name: string): 0 |
   return undefined
 }
 
+function TeamRow({
+  team,
+  isFirst,
+  moneyline,
+  mlIndex,
+  spread,
+  spreadIndex,
+  spreadTopLabel,
+  total,
+  totalIndex,
+  totalTopLabel,
+  eventTitle,
+  teamName,
+}: {
+  team: TeamSummary
+  isFirst: boolean
+  moneyline: MarketWithPick | undefined
+  mlIndex: 0 | 1 | undefined
+  spread: MarketWithPick | undefined
+  spreadIndex: 0 | 1 | undefined
+  spreadTopLabel: string
+  total: MarketWithPick | undefined
+  totalIndex: 0 | 1 | undefined
+  totalTopLabel: string
+  eventTitle: string
+  teamName: string
+}) {
+  return (
+    <div className={cn("flex items-center gap-3 px-3 py-2.5", !isFirst && "border-t border-dashed border-border/60")}>
+      <TeamBadge team={team} />
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-sm font-semibold">{team.name}</div>
+        {team.record ? <div className="font-mono text-[11px] text-muted-foreground">{team.record}</div> : null}
+      </div>
+      <div className="grid shrink-0 grid-cols-3 gap-1.5">
+        <div className="w-[88px]">
+          {moneyline && mlIndex !== undefined ? (
+            <PriceCell market={moneyline} outcomeIndex={mlIndex} eventTitle={eventTitle} />
+          ) : (
+            <EmptyCell />
+          )}
+        </div>
+        <div className="w-[88px]">
+          {spread && spreadIndex !== undefined ? (
+            <PriceCell
+              market={spread}
+              outcomeIndex={spreadIndex}
+              eventTitle={eventTitle}
+              topLabel={spreadTopLabel}
+              outcomeLabel={`${teamName} ${spreadTopLabel}`.trim()}
+            />
+          ) : (
+            <EmptyCell />
+          )}
+        </div>
+        <div className="w-[88px]">
+          {total && totalIndex !== undefined ? (
+            <PriceCell
+              market={total}
+              outcomeIndex={totalIndex}
+              eventTitle={eventTitle}
+              topLabel={totalTopLabel}
+              outcomeLabel={totalTopLabel}
+            />
+          ) : (
+            <EmptyCell />
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// One header for the whole list of cards below it, rather than repeating
+// "Moneyline / Spread / Total" inside every single card — same column
+// widths/gaps/padding as TeamRow's price grid so it lines up exactly.
+// `label` (a date, or "Popular") shares the same line rather than sitting on
+// a row of its own above it.
+export function MarketColumnHeaders({ label }: { label?: string }) {
+  return (
+    <div className="flex items-center gap-3 px-3 pb-2">
+      <div className="min-w-0 flex-1 text-sm font-bold tracking-wide text-foreground uppercase">{label}</div>
+      <div className="grid shrink-0 grid-cols-3 gap-1.5 text-center text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
+        <div className="w-[88px]">Moneyline</div>
+        <div className="w-[88px]">Spread</div>
+        <div className="w-[88px]">Total</div>
+      </div>
+    </div>
+  )
+}
+
 export function EventRow({ data }: { data: EventWithMarkets }) {
   const moneyline = data.markets.find((m) => m.marketType === "moneyline")
   const spread = pickDefaultLine(data.markets.filter((m) => m.marketType === "spreads"))
@@ -54,98 +146,53 @@ export function EventRow({ data }: { data: EventWithMarkets }) {
   // itself got filtered out (e.g. locked while spread stayed open). Totals
   // never carries team identity — Over/Under only — so it's never a source.
   const identitySource = moneyline ?? spread
-  const teams = [identitySource?.outcomeAName ?? "Team A", identitySource?.outcomeBName ?? "Team B"] as const
+  const teamNames = [identitySource?.outcomeAName ?? data.event.teamA.name, identitySource?.outcomeBName ?? data.event.teamB.name] as const
+  const teams = [data.event.teamA, data.event.teamB] as const
 
   const overIndex = findOutcomeIndex(total, "Over")
   const underIndex = findOutcomeIndex(total, "Under")
 
   return (
-    <Card className="mb-2.5 gap-0 py-0">
-      <div className="p-3">
-        <Table>
-          <colgroup>
-            <col />
-            <col style={{ width: 92 }} />
-            <col style={{ width: 96 }} />
-            <col style={{ width: 96 }} />
-          </colgroup>
-          <TableHeader className="[&_tr]:border-b-0">
-            <TableRow className="border-b-0 hover:bg-transparent">
-              <TableHead className="h-auto py-0 pr-3 pb-3 pl-0 text-xs font-normal text-muted-foreground">
-                {formatTime(data.event.startTime)}
-              </TableHead>
-              <TableHead className="h-auto py-0 pr-1 pb-3 pl-0 text-center text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
-                Moneyline
-              </TableHead>
-              <TableHead className="h-auto px-1 py-0 pb-3 text-center text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
-                Spread
-              </TableHead>
-              <TableHead className="h-auto py-0 pr-0 pb-3 pl-1 text-center text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
-                Total
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {([0, 1] as const).map((rowIndex) => {
-              const teamName = teams[rowIndex]
-              const mlIndex = findOutcomeIndex(moneyline, teamName)
-              const spreadIndex = findOutcomeIndex(spread, teamName)
-              const totalIndex = rowIndex === 0 ? overIndex : underIndex
-              const totalLabel = rowIndex === 0 ? "Over" : "Under"
-              const spreadTopLabel =
-                spread && spreadIndex !== undefined ? formatSpreadTopLabel(spread, spreadIndex) : ""
-              const totalTopLabel = total && totalIndex !== undefined ? formatTotalTopLabel(total, totalLabel) : ""
-              // 8px gap between the two rows, split evenly between them (rather
-              // than on one side) so it reads the same as the 8px gap Polymarket
-              // uses between its own stacked outcome rows.
-              const rowSpacing = rowIndex === 0 ? "pt-0 pb-1" : "pt-1 pb-0"
+    <Card className="mb-2.5 gap-0 overflow-hidden py-0">
+      {data.event.isLive ? (
+        <div className="flex items-center gap-1.5 border-b border-border/60 bg-ember/5 px-3 py-1.5 text-[11px] font-bold tracking-wide text-ember uppercase">
+          <span className="size-1.5 shrink-0 rounded-full bg-ember motion-safe:animate-[pulse-dot_1.4s_ease-in-out_infinite]" />
+          Live
+          <span className="font-mono font-normal normal-case text-ember/70">· updated {timeAgo(data.event.lastSyncedAt)}</span>
+        </div>
+      ) : (
+        <div className="border-b border-border/60 px-3 py-1.5 text-[11px] font-normal text-muted-foreground">
+          {formatTime(data.event.startTime)}
+        </div>
+      )}
 
-              return (
-                <TableRow key={rowIndex} className="border-b-0 hover:bg-transparent">
-                  <TableCell
-                    className={cn("pr-3 pl-0 text-left font-semibold whitespace-normal", rowSpacing)}
-                  >
-                    {teamName}
-                  </TableCell>
-                  <TableCell className={cn("pr-1 pl-0", rowSpacing)}>
-                    {moneyline && mlIndex !== undefined ? (
-                      <PriceCell market={moneyline} outcomeIndex={mlIndex} eventTitle={data.event.title} />
-                    ) : (
-                      <EmptyCell />
-                    )}
-                  </TableCell>
-                  <TableCell className={cn("px-1", rowSpacing)}>
-                    {spread && spreadIndex !== undefined ? (
-                      <PriceCell
-                        market={spread}
-                        outcomeIndex={spreadIndex}
-                        eventTitle={data.event.title}
-                        topLabel={spreadTopLabel}
-                        outcomeLabel={`${teamName} ${spreadTopLabel}`.trim()}
-                      />
-                    ) : (
-                      <EmptyCell />
-                    )}
-                  </TableCell>
-                  <TableCell className={cn("pr-0 pl-1", rowSpacing)}>
-                    {total && totalIndex !== undefined ? (
-                      <PriceCell
-                        market={total}
-                        outcomeIndex={totalIndex}
-                        eventTitle={data.event.title}
-                        topLabel={totalTopLabel}
-                        outcomeLabel={totalTopLabel}
-                      />
-                    ) : (
-                      <EmptyCell />
-                    )}
-                  </TableCell>
-                </TableRow>
-              )
-            })}
-          </TableBody>
-        </Table>
-      </div>
+      {([0, 1] as const).map((rowIndex) => {
+        const teamName = teamNames[rowIndex]
+        const mlIndex = findOutcomeIndex(moneyline, teamName)
+        const spreadIndex = findOutcomeIndex(spread, teamName)
+        const totalIndex = rowIndex === 0 ? overIndex : underIndex
+        const totalLabel = rowIndex === 0 ? "Over" : "Under"
+        const spreadTopLabel = spread && spreadIndex !== undefined ? formatSpreadTopLabel(spread, spreadIndex) : ""
+        const totalTopLabel = total && totalIndex !== undefined ? formatTotalTopLabel(total, totalLabel) : ""
+
+        return (
+          <TeamRow
+            key={rowIndex}
+            team={teams[rowIndex]}
+            isFirst={rowIndex === 0}
+            moneyline={moneyline}
+            mlIndex={mlIndex}
+            spread={spread}
+            spreadIndex={spreadIndex}
+            spreadTopLabel={spreadTopLabel}
+            total={total}
+            totalIndex={totalIndex}
+            totalTopLabel={totalTopLabel}
+            eventTitle={data.event.title}
+            teamName={teamName}
+          />
+        )
+      })}
     </Card>
   )
 }

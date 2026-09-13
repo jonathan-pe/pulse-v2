@@ -1,4 +1,4 @@
-import { EventRow } from "@/components/picks/event-row"
+import { EventRow, MarketColumnHeaders } from "@/components/picks/event-row"
 import { LeagueRail } from "@/components/picks/league-rail"
 import { PickSlip } from "@/components/picks/pick-slip"
 import { useMarkets } from "@/hooks/usePicks"
@@ -52,9 +52,7 @@ export function SportView({
             ) : null}
             {groups.map((group) => (
               <div key={group.label} className="mb-4">
-                <div className="mb-2.5 px-0.5 text-xs font-bold tracking-wide text-muted-foreground uppercase">
-                  {group.label}
-                </div>
+                <MarketColumnHeaders label={group.label} />
                 {group.events.map((e) => (
                   <EventRow key={e.event.id} data={e} />
                 ))}
