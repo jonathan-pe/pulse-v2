@@ -162,7 +162,7 @@ function HomeComponent() {
                     <div
                       className={cn(
                         'font-mono text-lg font-semibold tabular-nums',
-                        record.totalPoints >= 0 ? 'text-primary' : 'text-destructive',
+                        record.totalPoints >= 0 ? 'text-win' : 'text-loss',
                       )}
                     >
                       {formatPoints(record.totalPoints)} <span className="text-xs font-medium text-muted-foreground">pts</span>
