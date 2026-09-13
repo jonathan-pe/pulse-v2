@@ -13,3 +13,18 @@ export function contrastTextColor(hex: string): string {
   const luminance = 0.2126 * r! + 0.7152 * g! + 0.0722 * b!
   return luminance > 0.45 ? "#1a1a1a" : "#fff"
 }
+
+// For team-colored text sitting directly on the app's own card background
+// (not a solid team-colored fill, where contrastTextColor above already
+// handles it) — a light team color (Raiders silver) can be unreadable
+// against a light theme's card, and a dark one (Cowboys navy) can vanish
+// against a dark theme's card. Blending toward the app's own --foreground
+// solves both directions in one shot and needs no light/dark branching: the
+// app already keeps --foreground contrast-tested against --card in each
+// theme, and this CSS variable flips with the theme automatically, so the
+// blended result inherits that same guarantee — mixing 45% of the way there
+// keeps the team hue recognizable while pulling it solidly into readable
+// territory.
+export function readableAccentText(hex: string): string {
+  return `color-mix(in oklch, ${hex} 55%, var(--color-foreground) 45%)`
+}

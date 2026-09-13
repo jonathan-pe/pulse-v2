@@ -15,6 +15,7 @@ export function PriceCell({
   topLabel,
   outcomeLabel,
   accentColor,
+  teamLogoUrl,
   tone,
 }: {
   market: MarketWithPick
@@ -31,6 +32,10 @@ export function PriceCell({
   // duplicating the className branches; null/undefined (no color resolved)
   // falls back to the app's own primary accent untouched.
   accentColor?: string | null
+  // The same team's logo, carried through to the pick slip so a staged
+  // entry there can show the same badge as everywhere else — PriceCell has
+  // no reason to render it itself, only to pass it along when staging.
+  teamLogoUrl?: string | null
   // Over/Under has no team to color by, but does have a fixed semantic
   // color: Over reuses the app's win-green, Under its destructive-red —
   // both already have a contrast-tested foreground pair (see index.css),
@@ -73,6 +78,9 @@ export function PriceCell({
           line: market.line,
           outcomeName: outcomeLabel ?? outcomeName,
           price,
+          teamLogoUrl,
+          teamColor: accentColor,
+          tone,
         })
       }}
       style={accentStyle}

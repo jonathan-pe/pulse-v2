@@ -14,6 +14,14 @@ export interface StagedPick {
   line: string | null
   outcomeName: string
   price: string
+  // Moneyline/spread only — the picked team's own brand identity, so the
+  // pick slip can carry the same logo/color treatment as everywhere else.
+  // Totals has no team; `tone` covers Over/Under's fixed win/destructive
+  // color there instead (see PriceCell, which is the one place both of
+  // these actually get resolved).
+  teamLogoUrl?: string | null
+  teamColor?: string | null
+  tone?: 'win' | 'destructive'
 }
 
 interface StagingContextValue {

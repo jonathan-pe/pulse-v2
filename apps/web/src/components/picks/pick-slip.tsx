@@ -1,9 +1,11 @@
 import { Link } from "@tanstack/react-router"
-import { Ticket, X } from "lucide-react"
+import { ArrowDown, ArrowUp, Ticket, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/hooks/useAuth"
-import { useStaging } from "@/hooks/usePicksStaging"
+import { useStaging, type StagedPick } from "@/hooks/usePicksStaging"
+import { readableAccentText } from "@/lib/color"
+import { TeamBadge } from "./team-badge"
 
 const MARKET_LABEL = {
   moneyline: "Moneyline",
@@ -27,6 +29,49 @@ function Notch({ side }: { side: "left" | "right" }) {
       )}
     />
   )
+}
+
+// Same badge everywhere else uses for moneyline/spread (real logo, falling
+// back to team-colored initials). Totals has no team to show — its fixed
+// win/destructive tone (see PriceCell) fills the same slot with an up/down
+// arrow instead (Over moves the total up, Under moves it down), so every
+// entry gets a colored mark rather than only some of them. Sized to match
+// the two-line team/market stack next to it (see the entry layout below)
+// rather than an arbitrary icon size — the row reads as one unit, badge
+// included, instead of a small icon floating next to taller text.
+function EntryBadge({ entry }: { entry: StagedPick }) {
+  if (entry.teamLogoUrl || entry.teamColor) {
+    const name = entry.outcomeName.replace(/\s*[+−-].*$/, "")
+    return (
+      <TeamBadge
+        className="size-9 shrink-0 rounded-md"
+        team={{ name, logoUrl: entry.teamLogoUrl ?? null, color: entry.teamColor ?? null, record: null }}
+      />
+    )
+  }
+  const isOver = entry.tone === "win"
+  const Icon = isOver ? ArrowUp : ArrowDown
+  return (
+    <div
+      className={cn(
+        "flex size-9 shrink-0 items-center justify-center rounded-md",
+        isOver ? "bg-win/15 text-win" : "bg-destructive/15 text-destructive",
+      )}
+    >
+      <Icon className="size-4.5" strokeWidth={2.5} />
+    </div>
+  )
+}
+
+// Team colors are arbitrary and unvetted for contrast against the card
+// background (unlike win/destructive, which are already app tokens tuned for
+// exactly this) — see readableAccentText for why team color specifically
+// needs the extra step.
+function entryPercentColor(entry: StagedPick): string {
+  if (entry.teamColor) return readableAccentText(entry.teamColor)
+  if (entry.tone === "win") return "var(--color-win)"
+  if (entry.tone === "destructive") return "var(--color-destructive)"
+  return "var(--color-primary)"
 }
 
 export function PickSlip() {
@@ -70,6 +115,25 @@ export function PickSlip() {
                     <Notch side="right" />
                   </>
                 ) : null}
+                <div className="min-w-0 flex-1">
+                  <div className="mb-1.5 truncate pr-5 text-[11.5px] text-muted-foreground">{entry.eventTitle}</div>
+                  <div className="flex items-center justify-between gap-2 pr-5">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <EntryBadge entry={entry} />
+                      <div className="min-w-0">
+                        <div className="truncate text-[13.5px] leading-tight font-semibold">{entry.outcomeName}</div>
+                        <div className="text-[11.5px] leading-tight text-muted-foreground">{MARKET_LABEL[entry.marketType]}</div>
+                      </div>
+                    </div>
+                    <span
+                      className="shrink-0 font-mono text-base font-bold tabular-nums"
+                      style={{ color: entryPercentColor(entry) }}
+                    >
+                      {(Number(entry.price) * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                  {error ? <div className="mt-1 text-[11px] text-destructive">{error}</div> : null}
+                </div>
                 <Button
                   type="button"
                   variant="ghost"
@@ -80,15 +144,6 @@ export function PickSlip() {
                 >
                   <X className="size-3" />
                 </Button>
-                <div className="mb-1 truncate pr-5 text-[11.5px] text-muted-foreground">{entry.eventTitle}</div>
-                <div className="flex items-center justify-between gap-2 pr-5">
-                  <span className="text-[13.5px] font-semibold">{entry.outcomeName}</span>
-                  <span className="font-mono text-xs tabular-nums text-primary">
-                    {(Number(entry.price) * 100).toFixed(1)}%
-                  </span>
-                </div>
-                <div className="text-[11.5px] text-muted-foreground">{MARKET_LABEL[entry.marketType]}</div>
-                {error ? <div className="mt-1 text-[11px] text-destructive">{error}</div> : null}
               </div>
             )
           })}

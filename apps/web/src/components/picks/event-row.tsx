@@ -85,7 +85,13 @@ function TeamRow({
       <div className="grid shrink-0 grid-cols-3 gap-1.5">
         <div className="w-[88px]">
           {moneyline && mlIndex !== undefined ? (
-            <PriceCell market={moneyline} outcomeIndex={mlIndex} eventTitle={eventTitle} accentColor={team.color} />
+            <PriceCell
+              market={moneyline}
+              outcomeIndex={mlIndex}
+              eventTitle={eventTitle}
+              accentColor={team.color}
+              teamLogoUrl={team.logoUrl}
+            />
           ) : (
             <EmptyCell />
           )}
@@ -99,6 +105,7 @@ function TeamRow({
               topLabel={spreadTopLabel}
               outcomeLabel={`${teamName} ${spreadTopLabel}`.trim()}
               accentColor={team.color}
+              teamLogoUrl={team.logoUrl}
             />
           ) : (
             <EmptyCell />
