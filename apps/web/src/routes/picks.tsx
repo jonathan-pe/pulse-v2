@@ -43,7 +43,7 @@ function MyPicksPage() {
   return (
     <div className="mx-auto w-full max-w-[90rem] px-4 py-8">
       <div className="mb-6">
-        <h1 className="font-heading text-2xl font-semibold">My Picks</h1>
+        <h1 className="my-0 font-heading text-2xl font-semibold">My Picks</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">Your full record across every market you've picked.</p>
       </div>
 
