@@ -75,7 +75,7 @@ function TeamRow({
   teamName: string
 }) {
   return (
-    <div className="flex items-center gap-3 px-3 py-2.5">
+    <div className="flex items-center gap-3 px-3 py-2">
       <TeamBadge team={team} />
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-semibold">{team.name}</div>
@@ -166,15 +166,15 @@ export function EventRow({ data }: { data: EventWithMarkets }) {
   const underIndex = findOutcomeIndex(total, "Under")
 
   return (
-    <Card className="mb-2.5 gap-0 overflow-hidden py-0">
+    <Card className="mb-2 gap-0 overflow-hidden py-0">
       {data.event.isLive ? (
-        <div className="flex items-center gap-1.5 bg-ember/5 px-3 py-1.5 text-xs font-bold tracking-wide text-ember uppercase">
+        <div className="flex items-center gap-1.5 bg-ember/5 px-3 py-1 text-xs font-bold tracking-wide text-ember uppercase">
           <span className="size-1.5 shrink-0 rounded-full bg-ember motion-safe:animate-[pulse-dot_1.4s_ease-in-out_infinite]" />
           Live
           <span className="font-mono font-normal normal-case text-ember/70">· updated {timeAgo(data.event.lastSyncedAt)}</span>
         </div>
       ) : (
-        <div className="px-3 py-1.5 text-xs font-normal text-muted-foreground">
+        <div className="px-3 py-1 text-xs font-normal text-muted-foreground">
           {formatTime(data.event.startTime)}
         </div>
       )}
