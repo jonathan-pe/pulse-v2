@@ -1,6 +1,6 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { apiFetch, type EventWithMarkets, type ListMyPicksResponse } from '@/lib/api'
-import { myPicksSearchToQueryString, type MyPicksSearch } from '@/lib/picks-search'
+import { apiFetch, type EventWithMarkets, type ListMyPicksResponse, type PicksAnalytics } from '@/lib/api'
+import { myPicksAnalyticsSearchToQueryString, myPicksSearchToQueryString, type MyPicksSearch } from '@/lib/picks-search'
 
 // Home page / league directory need every pick to compute per-league
 // records — the paginated My Picks table below has its own hook.
@@ -28,6 +28,18 @@ export function useMyPicks(search: MyPicksSearch) {
   return useQuery({
     queryKey: ['my-picks', search],
     queryFn: () => apiFetch<ListMyPicksResponse>(`/picks?${myPicksSearchToQueryString(search)}`),
+    placeholderData: keepPreviousData,
+  })
+}
+
+// Follows the same league/marketType/date filters as the My Picks table
+// (see myPicksAnalyticsSearchToQueryString) but keyed separately, since it
+// ignores page/sort/status and shouldn't refetch when only those change.
+export function useMyPicksAnalytics(search: MyPicksSearch) {
+  const { league, marketType, from, to } = search
+  return useQuery({
+    queryKey: ['my-picks-analytics', { league, marketType, from, to }],
+    queryFn: () => apiFetch<PicksAnalytics>(`/picks/analytics?${myPicksAnalyticsSearchToQueryString(search)}`),
     placeholderData: keepPreviousData,
   })
 }

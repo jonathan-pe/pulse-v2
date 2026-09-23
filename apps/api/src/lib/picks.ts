@@ -1,8 +1,16 @@
 import { and, desc, eq, gte, inArray, isNull, lte, ne, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
-import { brierScore, calculatePoints, scorePick, type PickOutcomeStatus } from '@pulse/shared'
+import {
+  breakdownBy,
+  brierScore,
+  calculatePoints,
+  calibrationBuckets,
+  pointsOverTime,
+  scorePick,
+  type PickOutcomeStatus,
+} from '@pulse/shared'
 import { getDb } from '../db/index.js'
-import { event, market, pick, team } from '../db/schema.js'
+import { event, league, market, pick, team } from '../db/schema.js'
 
 const teamA = alias(team, 'pick_team_a')
 const teamB = alias(team, 'pick_team_b')
@@ -287,6 +295,46 @@ function computeStats(results: PickResult[]): PicksStats {
   return stats
 }
 
+// Shared by listMyPicks and getPicksAnalytics so a filter's meaning (and the
+// league/marketType/date columns it's checked against) can't drift between
+// the two queries — see each call site for why every pick is fetched
+// (unfiltered by settledStatus) rather than pushing a won/lost condition
+// into SQL.
+function buildPicksFilter(
+  userId: string,
+  filters: { league?: string[]; marketType?: Array<'moneyline' | 'spreads' | 'totals'>; from?: Date; to?: Date },
+) {
+  return and(
+    eq(pick.userId, userId),
+    filters.league?.length ? inArray(event.leagueId, filters.league) : undefined,
+    filters.marketType?.length ? inArray(market.marketType, filters.marketType) : undefined,
+    filters.from ? gte(event.startTime, filters.from) : undefined,
+    filters.to ? lte(event.startTime, filters.to) : undefined,
+  )
+}
+
+// Settled picks use the cached columns settlePicksForMarket() wrote;
+// upcoming/pending/newly-resolved-but-not-yet-cached picks are derived live
+// since they can flip every ingestion cycle (or, for the last case, simply
+// haven't been written yet) and weren't persisted. Shared by listMyPicks and
+// getPicksAnalytics so both agree on exactly which picks count as won/lost.
+function deriveStatusAndPoints(
+  pickRow: { outcomeIndex: number; priceAtPick: string; settledStatus: 'won' | 'lost' | null; points: string | null },
+  marketRow: { status: 'scheduled' | 'closed' | 'resolved'; resolvedOutcomeIndex: number | null },
+  eventRow: { startTime: Date },
+): { status: PickOutcomeStatus; points: number | null } {
+  if (pickRow.settledStatus !== null) {
+    return { status: pickRow.settledStatus, points: Number(pickRow.points) }
+  }
+  return scorePick({
+    outcomeIndex: pickRow.outcomeIndex,
+    priceAtPick: Number(pickRow.priceAtPick),
+    marketStatus: marketRow.status,
+    resolvedOutcomeIndex: marketRow.resolvedOutcomeIndex,
+    eventStartTime: eventRow.startTime,
+  })
+}
+
 // Unlike listOpenMarketsWithPicks, this is the "review what happened" view —
 // it includes every pick regardless of lock/resolution state. Settled picks
 // read their cached settledStatus/points (written once by
@@ -314,15 +362,7 @@ export async function listMyPicks(userId: string, params: ListMyPicksParams): Pr
     .innerJoin(event, eq(market.eventId, event.id))
     .innerJoin(teamA, eq(event.teamAId, teamA.id))
     .innerJoin(teamB, eq(event.teamBId, teamB.id))
-    .where(
-      and(
-        eq(pick.userId, userId),
-        params.league?.length ? inArray(event.leagueId, params.league) : undefined,
-        params.marketType?.length ? inArray(market.marketType, params.marketType) : undefined,
-        params.from ? gte(event.startTime, params.from) : undefined,
-        params.to ? lte(event.startTime, params.to) : undefined,
-      ),
-    )
+    .where(buildPicksFilter(userId, params))
     .orderBy(desc(event.startTime))
 
   let results: PickResult[] = rows.map((row) => ({
@@ -337,18 +377,7 @@ export async function listMyPicks(userId: string, params: ListMyPicksParams): Pr
       teamBLogoUrl: row.teamBLogoUrl,
       teamBColor: row.teamBColor,
     },
-    // Settled picks use the cached columns settlePicksForMarket() wrote;
-    // upcoming/pending (settledStatus still null) are derived live since
-    // they can flip every ingestion cycle and were never persisted.
-    ...(row.pick.settledStatus !== null
-      ? { status: row.pick.settledStatus, points: Number(row.pick.points) }
-      : scorePick({
-          outcomeIndex: row.pick.outcomeIndex,
-          priceAtPick: Number(row.pick.priceAtPick),
-          marketStatus: row.market.status,
-          resolvedOutcomeIndex: row.market.resolvedOutcomeIndex,
-          eventStartTime: row.event.startTime,
-        })),
+    ...deriveStatusAndPoints(row.pick, row.market, row.event),
   }))
 
   // Stats reflect league/marketType/date filters but not the status filter —
@@ -377,4 +406,69 @@ export async function listMyPicks(userId: string, params: ListMyPicksParams): Pr
   const page = results.slice(start, start + params.limit)
 
   return { picks: page, total, stats }
+}
+
+export interface PicksAnalyticsFilters {
+  league?: string[]
+  marketType?: Array<'moneyline' | 'spreads' | 'totals'>
+  from?: Date
+  to?: Date
+}
+
+export interface PicksAnalytics {
+  pointsOverTime: ReturnType<typeof pointsOverTime>
+  calibration: ReturnType<typeof calibrationBuckets>
+  byLeague: ReturnType<typeof breakdownBy>
+  byMarketType: ReturnType<typeof breakdownBy>
+}
+
+// Same filter/join shape as listMyPicks, minus status — charts always
+// compute over the full settled set for the same reason computeStats()
+// does: filtering to "won" only would make win-rate charts meaningless. The
+// league join here is only to grab league.name for chart labels; filtering
+// still goes through buildPicksFilter's event.leagueId condition, same
+// column listMyPicks filters on, so both queries agree on what "in league
+// X" means. Queries every pick regardless of settledStatus (not just the
+// persisted ones) and runs it through the same deriveStatusAndPoints() as
+// listMyPicks, then keeps only won/lost — a market can resolve and get
+// live-scored before settlePicksForMarket() has cached it, and that pick
+// needs to count here exactly like it does in the stat tiles.
+export async function getPicksAnalytics(userId: string, filters: PicksAnalyticsFilters): Promise<PicksAnalytics> {
+  const db = getDb()
+  const rows = await db
+    .select({
+      pick,
+      market,
+      event,
+      leagueId: league.id,
+      leagueName: league.name,
+    })
+    .from(pick)
+    .innerJoin(market, eq(pick.marketId, market.id))
+    .innerJoin(event, eq(market.eventId, event.id))
+    .innerJoin(league, eq(event.leagueId, league.id))
+    .where(buildPicksFilter(userId, filters))
+
+  const settled = rows
+    .map((row) => ({ ...deriveStatusAndPoints(row.pick, row.market, row.event), row }))
+    .filter(
+      (scored): scored is { status: 'won' | 'lost'; points: number; row: (typeof rows)[number] } =>
+        scored.status === 'won' || scored.status === 'lost',
+    )
+    .map(({ status, points, row }) => ({
+      points,
+      priceAtPick: Number(row.pick.priceAtPick),
+      isCorrect: status === 'won',
+      eventStartTime: row.event.startTime,
+      leagueId: row.leagueId,
+      leagueName: row.leagueName,
+      marketType: row.market.marketType,
+    }))
+
+  return {
+    pointsOverTime: pointsOverTime(settled),
+    calibration: calibrationBuckets(settled),
+    byLeague: breakdownBy(settled, (row) => ({ key: row.leagueId, label: row.leagueName })),
+    byMarketType: breakdownBy(settled, (row) => ({ key: row.marketType, label: row.marketType })),
+  }
 }

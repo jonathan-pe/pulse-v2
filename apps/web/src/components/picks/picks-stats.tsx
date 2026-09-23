@@ -1,11 +1,7 @@
 import { Crosshair, Flame, Percent, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { formatPoints } from '@/lib/picks-summary'
+import { formatPercent, formatPoints } from '@/lib/picks-summary'
 import type { PicksStats } from '@/lib/api'
-
-function formatPercent(value: number): string {
-  return `${Math.round(value * 100)}%`
-}
 
 function formatBrier(value: number): string {
   return value.toFixed(2)

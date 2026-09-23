@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { TeamBadge } from '@/components/picks/team-badge'
 import { cn } from '@/lib/utils'
-import { formatPoints } from '@/lib/picks-summary'
+import { formatDate, formatPoints } from '@/lib/picks-summary'
 import type { PickOutcomeStatus, PickResult } from '@/lib/api'
 import type { MyPicksSearch, SortField } from '@/lib/picks-search'
 
@@ -50,10 +50,6 @@ function pickDescription(result: PickResult): string {
     return `${outcomeName} ${market.line}`.trim()
   }
   return outcomeName
-}
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
 // priceAtPick is Polymarket's implied probability (0-1) of the picked

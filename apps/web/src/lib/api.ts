@@ -80,6 +80,37 @@ export interface ListMyPicksResponse {
   stats: PicksStats
 }
 
+export interface PointsOverTimePoint {
+  date: string
+  points: number
+  cumulativePoints: number
+}
+
+export interface CalibrationBucket {
+  bucketMin: number
+  bucketMax: number
+  predictedRate: number
+  actualRate: number
+  count: number
+}
+
+export interface GroupBreakdown {
+  key: string
+  label: string
+  count: number
+  won: number
+  lost: number
+  winRate: number
+  points: number
+}
+
+export interface PicksAnalytics {
+  pointsOverTime: PointsOverTimePoint[]
+  calibration: CalibrationBucket[]
+  byLeague: GroupBreakdown[]
+  byMarketType: GroupBreakdown[]
+}
+
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`/api${path}`, {
     ...init,

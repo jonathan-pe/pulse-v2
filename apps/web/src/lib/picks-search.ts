@@ -42,15 +42,32 @@ export function validateMyPicksSearch(search: Record<string, unknown>): MyPicksS
   return { page, limit, sortBy, sortDir, status, league, marketType, from, to }
 }
 
+// Shared by both query-string builders below so the league/marketType/from/to
+// serialization — the filters the /picks and /picks/analytics endpoints both
+// understand — lives in exactly one place.
+function appendFilterParams(params: URLSearchParams, search: MyPicksSearch): void {
+  if (search.league) params.set('league', search.league)
+  if (search.marketType) params.set('marketType', search.marketType)
+  if (search.from) params.set('from', search.from)
+  if (search.to) params.set('to', search.to)
+}
+
+// The analytics endpoint only understands league/marketType/from/to (no
+// pagination/sort/status — see PicksAnalyticsFilters), so it gets its own
+// query-string builder rather than reusing the table's, which would
+// otherwise cause a pointless refetch every time the status filter changes.
+export function myPicksAnalyticsSearchToQueryString(search: MyPicksSearch): string {
+  const params = new URLSearchParams()
+  appendFilterParams(params, search)
+  return params.toString()
+}
+
 export function myPicksSearchToQueryString(search: MyPicksSearch): string {
   const params = new URLSearchParams()
   params.set('page', String(search.page ?? 1))
   params.set('limit', String(search.limit ?? DEFAULT_LIMIT))
   params.set('sort', `${search.sortBy ?? 'date'}:${search.sortDir ?? 'desc'}`)
   if (search.status) params.set('status', search.status)
-  if (search.league) params.set('league', search.league)
-  if (search.marketType) params.set('marketType', search.marketType)
-  if (search.from) params.set('from', search.from)
-  if (search.to) params.set('to', search.to)
+  appendFilterParams(params, search)
   return params.toString()
 }

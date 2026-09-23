@@ -3,6 +3,7 @@ import { Inbox, SearchX } from 'lucide-react'
 import { useMyPicks } from '@/hooks/usePicks'
 import { authClient } from '@/lib/auth-client'
 import { PicksStatsRow } from '@/components/picks/picks-stats'
+import { PicksAnalyticsSection } from '@/components/picks/picks-analytics-section'
 import { PicksFilterBar } from '@/components/picks/picks-filter-bar'
 import { PicksTable } from '@/components/picks/picks-table'
 import { PicksPagination } from '@/components/picks/picks-pagination'
@@ -65,6 +66,7 @@ function MyPicksPage() {
       {data && !hasAnyPicksAtAll ? (
         <>
           <PicksStatsRow stats={data.stats} />
+          <PicksAnalyticsSection search={search} />
           <PicksFilterBar search={search} onChange={patchSearch} />
 
           {data.total === 0 ? (

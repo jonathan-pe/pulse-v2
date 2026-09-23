@@ -17,3 +17,14 @@ export function formatPoints(points: number): string {
   const sign = points >= 0 ? '+' : ''
   return `${sign}${points.toFixed(1)}`
 }
+
+export function formatPercent(value: number): string {
+  return `${Math.round(value * 100)}%`
+}
+
+// Shared by the picks table's date column and the points-over-time chart's
+// axis/tooltip — one "short month/day" formatting rule for both rather than
+// two independent Intl.DateTimeFormat instances that could drift.
+export function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+}
